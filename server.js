@@ -4,20 +4,21 @@ require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const axios = require("axios");
-const AWS = require('aws-sdk');
+const { CognitoIdentityProviderClient } = require("@aws-sdk/client-cognito-identity-provider");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const RIOT_API_KEY = process.env.RIOT_API_KEY || "";
 
 // AWS Configuration
-AWS.config.update({
+const cognitoClient = new CognitoIdentityProviderClient({
     region: process.env.AWS_REGION,
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    }
 });
 
-const cognito = new AWS.CognitoIdentityServiceProvider();
 const cognitoConfig = {
     UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID,
     ClientId: process.env.AWS_COGNITO_CLIENT_ID
