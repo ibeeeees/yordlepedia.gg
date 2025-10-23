@@ -4,24 +4,46 @@ require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const axios = require("axios");
-const AWS = require('aws-sdk');
+const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const RIOT_API_KEY = process.env.RIOT_API_KEY || "";
 
-// AWS Configuration
-AWS.config.update({
-    region: process.env.AWS_REGION,
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-});
+// Middleware setup
+app.use(express.json());
+app.use(express.static(path.join(__dirname)));
+app.use(cors());
 
-const cognito = new AWS.CognitoIdentityServiceProvider();
-const cognitoConfig = {
-    UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID,
-    ClientId: process.env.AWS_COGNITO_CLIENT_ID
-};
+// Cache utilities
+function createTimedCache(ttlMs) {
+    const cache = new Map();
+    return {
+        get(key) {
+            const item = cache.get(key);
+            if (!item) return null;
+            if (Date.now() > item.expiry) {
+                cache.delete(key);
+                return null;
+            }
+            return item.value;
+        },
+        set(key, value) {
+            cache.set(key, {
+                value,
+                expiry: Date.now() + ttlMs
+            });
+        }
+    };
+}
+
+// Cache setup with different TTLs
+const minutes = (m) => m * 60 * 1000;
+const responseCache = createTimedCache(minutes(5));
+const summonerCache = createTimedCache(minutes(15));
+const rankedCache = createTimedCache(minutes(10));
+const matchIdsCache = createTimedCache(minutes(10));
+const matchDetailCache = createTimedCache(minutes(60));
 
 const regionToCluster = {
     br1: "americas",
@@ -48,8 +70,7 @@ const queueMap = {
     450: { key: "ARAM", label: "ARAM" }
 };
 
-// Middleware to parse JSON bodies
-app.use(express.json());
+// Auth routes below
 
 // Auth Routes
 app.post('/api/auth/signup', async (req, res) => {
@@ -328,11 +349,6 @@ const fallbackPayload = {
   ]
 };
 
-const responseCache = createTimedCache(minutes(5));
-const summonerCache = createTimedCache(minutes(15));
-const rankedCache = createTimedCache(minutes(10));
-const matchIdsCache = createTimedCache(minutes(10));
-const matchDetailCache = createTimedCache(minutes(60));
 // Stores per-user banner clip by PUUID
 const bannerClipStore = new Map();
 
@@ -447,17 +463,156 @@ app.post("/api/summoner/banner", async (req, res) => {
   }
 });
 
-app.get("/", (_req, res) => {
-  res.sendFile(path.join(__dirname, "website.html"));
+// Match history endpoint
+// Ranked info endpoint
+app.get("/api/ranked", async (req, res) => {
+    const { region, id } = req.query;
+
+    if (!region || !id) {
+        return res.status(400).json({ error: "Query parameters 'region' and 'id' are required." });
+    }
+
+    const normalizedRegion = region.toLowerCase();
+    if (!regionToCluster[normalizedRegion]) {
+        return res.status(400).json({ error: `Unsupported region "${region}".` });
+    }
+
+    const cacheKey = `ranked:${normalizedRegion}:${id}`;
+    const cached = rankedCache.get(cacheKey);
+    if (cached) {
+        return res.json({
+            meta: { source: "cache" },
+            ranked: cached
+        });
+    }
+
+    try {
+        const rankedUrl = `https://${normalizedRegion}.api.riotgames.com/lol/league/v4/entries/by-summoner/${id}`;
+        const response = await axios.get(rankedUrl, {
+            headers: { "X-Riot-Token": RIOT_API_KEY }
+        });
+
+        const rankedData = response.data.map(queue => ({
+            queueType: queueMap[queue.queueType === "RANKED_SOLO_5x5" ? 420 : 440].key,
+            tier: queue.tier,
+            rank: queue.rank,
+            leaguePoints: queue.leaguePoints,
+            wins: queue.wins,
+            losses: queue.losses,
+            winRate: Math.round((queue.wins / (queue.wins + queue.losses)) * 100),
+            hotStreak: queue.hotStreak
+        }));
+
+        rankedCache.set(cacheKey, rankedData);
+        res.json({
+            meta: { source: "live" },
+            ranked: rankedData
+        });
+    } catch (error) {
+        console.error("Ranked info error:", error);
+        res.status(500).json({ error: "Failed to fetch ranked information." });
+    }
 });
 
+app.get("/api/matches", async (req, res) => {
+    const { region, puuid } = req.query;
+
+    if (!region || !puuid) {
+        return res.status(400).json({ error: "Query parameters 'region' and 'puuid' are required." });
+    }
+
+    const normalizedRegion = region.toLowerCase();
+    const cluster = regionToCluster[normalizedRegion];
+    if (!cluster) {
+        return res.status(400).json({ error: `Unsupported region "${region}".` });
+    }
+
+    const cacheKey = `matches:${cluster}:${puuid}`;
+    const cached = matchIdsCache.get(cacheKey);
+    if (cached) {
+        return res.json({
+            meta: { source: "cache" },
+            matches: cached
+        });
+    }
+
+    try {
+        const matchListUrl = `https://${cluster}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids`;
+        const response = await axios.get(matchListUrl, {
+            params: { count: 20 },
+            headers: { "X-Riot-Token": RIOT_API_KEY }
+        });
+
+        matchIdsCache.set(cacheKey, response.data);
+
+        // Fetch match details for each match
+        const matchDetails = await Promise.all(
+            response.data.slice(0, 5).map(async (matchId) => {
+                const matchCacheKey = `match:${matchId}`;
+                const cachedMatch = matchDetailCache.get(matchCacheKey);
+                if (cachedMatch) return cachedMatch;
+
+                try {
+                    const matchUrl = `https://${cluster}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
+                    const matchResponse = await axios.get(matchUrl, {
+                        headers: { "X-Riot-Token": RIOT_API_KEY }
+                    });
+
+                    const match = matchResponse.data;
+                    const participant = match.info.participants.find(p => p.puuid === puuid);
+                    
+                    if (!participant) {
+                        console.warn(`Player ${puuid} not found in match ${matchId}`);
+                        return null;
+                    }
+
+                    const matchData = {
+                        id: matchId,
+                        gameMode: queueMap[match.info.queueId]?.key || "OTHER",
+                        champion: participant.championName,
+                        role: participant.teamPosition || "FILL",
+                        duration: Math.floor(match.info.gameDuration / 60) + "m",
+                        result: participant.win ? "win" : "loss",
+                        kills: participant.kills,
+                        deaths: participant.deaths,
+                        assists: participant.assists,
+                        kda: `${participant.kills}/${participant.deaths}/${participant.assists}`,
+                        kdaValue: participant.deaths === 0 ? participant.kills + participant.assists : ((participant.kills + participant.assists) / participant.deaths).toFixed(1),
+                        cs: participant.totalMinionsKilled + participant.neutralMinionsKilled,
+                        csPerMin: ((participant.totalMinionsKilled + participant.neutralMinionsKilled) / (match.info.gameDuration / 60)).toFixed(1),
+                        kp: Math.round(((participant.kills + participant.assists) / match.info.teams.find(t => t.teamId === participant.teamId).objectives.champion.kills) * 100)
+                    };
+
+                    matchDetailCache.set(matchCacheKey, matchData);
+                    return matchData;
+                } catch (error) {
+                    console.error(`Error fetching match ${matchId}:`, error);
+                    return null;
+                }
+            })
+        );
+
+        const validMatches = matchDetails.filter(m => m !== null);
+        res.json({
+            meta: { source: "live" },
+            matches: validMatches
+        });
+    } catch (error) {
+        console.error("Match history error:", error);
+        res.status(500).json({ error: "Failed to fetch match history." });
+    }
+});
+
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "website.html"));
+});
+
+// Start server
 app.listen(PORT, () => {
-  console.log(`Yordlepedia.gg dev server running on http://localhost:${PORT}`);
-  if (RIOT_API_KEY) {
-    prefetchConfiguredSummoners().catch(error => {
-      console.warn("Prefetch failed:", error?.message || error);
-    });
-  }
+    console.log(`Server is running on port ${PORT}`);
+    if (!RIOT_API_KEY) {
+        console.warn("Warning: RIOT_API_KEY not configured. Server will return demo data only.");
+    }
 });
 
 async function fetchSummonerProfile(region, summonerName) {
@@ -582,10 +737,6 @@ function normalizeSummonerName(name = "") {
 
 function cacheKeyForSummoner(region, name) {
   return `summoner:${region}:${normalizeSummonerName(name)}`;
-}
-
-function minutes(value) {
-  return value * 60 * 1000;
 }
 
 function createTimedCache(ttlMs) {
