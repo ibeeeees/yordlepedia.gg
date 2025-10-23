@@ -1,0 +1,22 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="120" fill="#0a1428" stroke="#c89b3c" stroke-width="8"/>
+
+  <!-- Book shape -->
+  <rect x="68" y="58" width="120" height="140" fill="#1e2328" stroke="#c89b3c" stroke-width="6" rx="4"/>
+  <line x1="128" y1="58" x2="128" y2="198" stroke="#c89b3c" stroke-width="6"/>
+
+  <!-- Decorative lines (pages) -->
+  <line x1="80" y1="90" x2="116" y2="90" stroke="#c89b3c" stroke-width="3"/>
+  <line x1="80" y1="110" x2="116" y2="110" stroke="#c89b3c" stroke-width="3"/>
+  <line x1="80" y1="130" x2="116" y2="130" stroke="#c89b3c" stroke-width="3"/>
+  <line x1="80" y1="150" x2="116" y2="150" stroke="#c89b3c" stroke-width="3"/>
+
+  <line x1="140" y1="90" x2="176" y2="90" stroke="#c89b3c" stroke-width="3"/>
+  <line x1="140" y1="110" x2="176" y2="110" stroke="#c89b3c" stroke-width="3"/>
+  <line x1="140" y1="130" x2="176" y2="130" stroke="#c89b3c" stroke-width="3"/>
+  <line x1="140" y1="150" x2="176" y2="150" stroke="#c89b3c" stroke-width="3"/>
+
+  <!-- Yordlepedia text -->
+  <text x="128" y="230" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#c89b3c" text-anchor="middle">YORDLEPEDIA</text>
+</svg>
