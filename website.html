@@ -28,6 +28,12 @@
             --border: rgba(183, 177, 165, 0.08);  /* Coarse Wool with opacity */
             --border-strong: rgba(221, 161, 94, 0.45);  /* Carnaby Tan with opacity */
             --shadow: 0 30px 80px rgba(27, 45, 58, 0.65);  /* Atlantic Depths with opacity */
+            
+            /* Profile Stats Box Styles */
+            --stat-box-padding: 20px;
+            --stat-box-radius: 12px;
+            --stat-box-gap: 12px;
+            --stat-box-shadow: 0 0 20px rgba(242, 204, 143, 0.05);
             scroll-padding-top: 80px; /* Add padding for fixed header */
             font-size: 16px;
         }
@@ -54,7 +60,9 @@
         .profile-info {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 16px;
+            margin-top: 16px;
+            padding: 0 24px 24px;
         }
 
         .feature-coming-soon {
@@ -402,32 +410,33 @@
         }
 
         .soon-badge { 
-            background: var(--bg-card-dark);
+            background: var(--accent-soft);
             color: var(--accent);
-            border: 1px solid var(--border-strong);
+            border: 1px solid var(--accent);
             padding: 6px 12px;
             border-radius: 999px;
             font-size: 0.75rem;
             letter-spacing: 1px;
             text-transform: uppercase;
-            font-weight: 600;
+            font-weight: 700;
             display: inline-block;
             margin-bottom: 12px;
             position: relative;
             z-index: 2;
+            box-shadow: 0 0 15px rgba(242, 204, 143, 0.1);
         }
         /* Profile banner (clickable video) */
         .profile-banner { 
             position: relative; 
             height: 200px; 
-            border-radius: 14px; 
+            border-radius: 14px 14px 0 0; /* Updated to only round top corners */
             background: var(--bg-card-dark);
             border: 1px solid var(--border); 
+            border-bottom: none; /* Remove bottom border */
             cursor: pointer; 
             display: grid; 
             place-items: center; 
             color: var(--text-soft); 
-            margin-bottom: 48px;
             overflow: hidden;
             transition: border-color 0.2s;
         }
@@ -465,8 +474,21 @@
         }
         .btn-mini { padding:6px 8px; border-radius:8px; border:1px solid rgba(255,255,255,.15); background: rgba(8,15,25,.6); color: var(--text-main); font-weight:700; font-size:.8rem; cursor:pointer; }
         .profile-banner .play-pill { background: rgba(255,210,0,0.18); color: var(--accent); border: 1px solid rgba(255,210,0,0.35); padding: 8px 12px; border-radius: 999px; font-weight: 700; letter-spacing: .5px; }
-        .profile-identity { display: grid; grid-template-columns: 96px 1fr; gap: 14px; margin-top: -56px; }
-        .avatar.avatar-lg { width: 96px; height: 96px; border-width: 4px; }
+        .profile-identity {
+            display: grid;
+            grid-template-columns: 96px 1fr;
+            gap: 14px;
+            padding: 24px;
+            background: var(--bg-card-dark);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 14px 14px;
+        }
+        .avatar.avatar-lg {
+            width: 96px;
+            height: 96px;
+            border-width: 4px;
+        }
 
         .profile-card::before {
             content: '';
@@ -505,44 +527,204 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             grid-auto-rows: 1fr;
-            gap: 24px;
+            gap: 16px;
             height: 100%;
+            margin-top: -8px;
         }
 
         .stat-box {
-            background: var(--bg-card-dark);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
+            background: linear-gradient(165deg, var(--bg-card-dark) 0%, rgba(16, 31, 48, 0.95) 100%);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            transition: transform 0.2s, box-shadow 0.2s;
+            gap: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(242, 204, 143, 0.05);
         }
         
         .stat-box:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow);
-            border-color: var(--border-strong);
+            border-color: var(--accent-strong);
+            box-shadow: 0 0 30px rgba(242, 204, 143, 0.1);
+        }
+
+        .stat-box::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: 180px;
+            opacity: 0.03;
+            z-index: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .stat-box:hover::after {
+            opacity: 0.06;
+        }
+        
+        .stat-box.wins::after {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F2CC8F'%3E%3Cpath d='M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z'/%3E%3C/svg%3E");
+        }
+
+        .stat-box.kda::after {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F2CC8F'%3E%3Cpath d='M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z'/%3E%3C/svg%3E");
+        }
+
+        .stat-box.damage::after {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F2CC8F'%3E%3Cpath d='M14 9l-1-2H7V5.72c.6-.34 1-.98 1-1.72 0-1.1-.9-2-2-2s-2 .9-2 2c0 .74.4 1.38 1 1.72V21h2v-4h5l1-2h7V9h-6zm4 8h-4l-1 2H7V9h5l1 2h5v6z'/%3E%3C/svg%3E");
+        }
+
+        .stat-box.vision::after {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F2CC8F'%3E%3Cpath d='M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z'/%3E%3C/svg%3E");
+        }
+
+        .stat-box::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, var(--accent-soft), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1;
+        }
+        
+        .stat-box:hover::before {
+            opacity: 1;
+        }
+
+        .stat-comparison {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .comparison-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .comparison-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-strong) 100%);
+            border-radius: 2px;
+            transition: width 1s ease-out;
+        }
+
+        .comparison-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-soft);
+        }
+
+        .comparison-rank {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .rank-change {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 4px;
+            font-size: 0.75rem;
+            color: #4ade80;
+        }
+
+        .rank-change.negative {
+            color: #ef4444;
+        }
+
+        .rank-change span:first-child {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .rank-change span:first-child::before {
+            content: '▲';
+            font-size: 0.7rem;
+        }
+
+        .rank-change.negative span:first-child::before {
+            content: '▼';
+        }
+
+        .stat-box > div {
+            position: relative;
+            z-index: 2;
+        }
+
+        .comparison-fill {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .comparison-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.1) 50%, 
+                transparent 100%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
         }
 
         .stat-label {
             text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 1px;
-            color: var(--text-soft);
+            font-size: 0.7rem;
+            letter-spacing: 1.5px;
+            color: var(--accent);
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
         }
 
         .stat-value {
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: 800;
-            margin-top: 6px;
+            margin: 4px 0;
+            background: linear-gradient(120deg, var(--text-main), var(--accent-strong));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: relative;
+            z-index: 1;
         }
 
         .stat-subtext {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
-            margin-top: 4px;
+            position: relative;
+            z-index: 1;
         }
 
         .tab-group {
@@ -830,19 +1012,21 @@
         .coming-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px; }
         .coming-card {
             background: var(--bg-card-dark);
-            border: 1px solid var(--border);
+            border: 1px solid var(--accent);
             border-radius: 16px;
             padding: 24px;
             position: relative;
-            transition: transform 0.2s, border-color 0.2s;
+            transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
             display: flex;
             flex-direction: column;
             gap: 12px;
             overflow: hidden;
+            box-shadow: 0 0 20px rgba(242, 204, 143, 0.05);
         }
         .coming-card:hover {
             transform: translateY(-2px);
-            border-color: var(--border-strong);
+            border-color: var(--accent-strong);
+            box-shadow: 0 0 25px rgba(242, 204, 143, 0.1);
         }
         .coming-card h3 { 
             margin-bottom: 4px;
@@ -1114,6 +1298,79 @@
                         </div>
                     </div>
                     <div style="margin-top:14px">
+                        <div class="stat-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--stat-box-gap)">
+                            <div class="stat-box wins">
+                                <h4 style="font-size: 1.1rem;">Win Rate</h4>
+                                <div style="font-size: 1.8rem; font-weight: 600;">52.3%</div>
+                                <div class="stat-comparison">
+                                    <div class="comparison-bar">
+                                        <div class="comparison-fill" style="width: 65%"></div>
+                                    </div>
+                                    <div class="comparison-labels">
+                                        <span>Average: 49.8%</span>
+                                        <span class="comparison-rank">Top 35%</span>
+                                    </div>
+                                    <div class="rank-change">
+                                        <span>+2.1%</span>
+                                        <span>Last 30 days</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-box kda">
+                                <h4 style="font-size: 1.1rem;">KDA Ratio</h4>
+                                <div style="font-size: 1.8rem; font-weight: 600;">3.42</div>
+                                <div class="stat-comparison">
+                                    <div class="comparison-bar">
+                                        <div class="comparison-fill" style="width: 78%"></div>
+                                    </div>
+                                    <div class="comparison-labels">
+                                        <span>Average: 2.89</span>
+                                        <span class="comparison-rank">Top 22%</span>
+                                    </div>
+                                    <div class="rank-change">
+                                        <span>+0.31</span>
+                                        <span>Last 30 days</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-box damage">
+                                <h4 style="font-size: 1.1rem;">Avg Damage</h4>
+                                <div style="font-size: 1.8rem; font-weight: 600;">24.8K</div>
+                                <div class="stat-comparison">
+                                    <div class="comparison-bar">
+                                        <div class="comparison-fill" style="width: 72%"></div>
+                                    </div>
+                                    <div class="comparison-labels">
+                                        <span>Average: 21.2K</span>
+                                        <span class="comparison-rank">Top 28%</span>
+                                    </div>
+                                    <div class="rank-change negative">
+                                        <span>-1.2K</span>
+                                        <span>Last 30 days</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-box vision">
+                                <h4 style="font-size: 1.1rem;">Vision Score</h4>
+                                <div style="font-size: 1.8rem; font-weight: 600;">42.6</div>
+                                <div class="stat-comparison">
+                                    <div class="comparison-bar">
+                                        <div class="comparison-fill" style="width: 85%"></div>
+                                    </div>
+                                    <div class="comparison-labels">
+                                        <span>Average: 35.4</span>
+                                        <span class="comparison-rank">Top 15%</span>
+                                    </div>
+                                    <div class="rank-change">
+                                        <span>+3.2</span>
+                                        <span>Last 30 days</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <p class="stat-label">Preferred Roles</p>
                         <p class="stat-subtext" id="preferredRoles">Mid · Jungle · Fill</p>
                     </div>
@@ -1123,25 +1380,93 @@
                     </div>
                 </aside>
                 <div class="stat-grid">
-                    <div class="stat-box">
-                        <div class="stat-label">Season Wins</div>
-                        <div class="stat-value" id="statSeasonWinsValue">214</div>
-                        <div class="stat-subtext" id="statSeasonWinsSubtext">+12 in the last week</div>
+                    <div class="stat-box wins">
+                        <div style="position: relative; z-index: 2;">
+                            <div class="stat-label">Season Wins</div>
+                            <div class="stat-value" id="statSeasonWinsValue">214</div>
+                            <div class="stat-subtext" id="statSeasonWinsSubtext">+12 in the last week</div>
+                        </div>
+                        <div class="stat-comparison">
+                            <div class="comparison-bar">
+                                <div class="comparison-fill" style="width: 78%"></div>
+                            </div>
+                            <div class="comparison-labels">
+                                <span>Top 22%</span>
+                                <span class="comparison-rank">Gold II Average</span>
+                            </div>
+                            <div class="rank-change">
+                                <span>+3% from last week</span>
+                                <span style="color: var(--text-soft)">• Rank 4,231</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Average KDA</div>
-                        <div class="stat-value" id="statAverageKDAValue">3.68</div>
-                        <div class="stat-subtext" id="statAverageKDASubtext">Top 14% mid players</div>
+                    <div class="stat-box kda">
+                        <div style="position: relative; z-index: 2;">
+                            <div class="stat-label">Average KDA</div>
+                            <div class="stat-value" id="statAverageKDAValue">3.68</div>
+                            <div class="stat-subtext" id="statAverageKDASubtext">
+                                <span style="color: #4ade80">6.2</span> / 
+                                <span style="color: #ef4444">1.7</span> / 
+                                <span style="color: #60a5fa">5.8</span>
+                            </div>
+                        </div>
+                        <div class="stat-comparison">
+                            <div class="comparison-bar">
+                                <div class="comparison-fill" style="width: 86%"></div>
+                            </div>
+                            <div class="comparison-labels">
+                                <span>Top 14%</span>
+                                <span class="comparison-rank">Mid Lane Average</span>
+                            </div>
+                            <div class="rank-change">
+                                <span>+5% from last month</span>
+                                <span style="color: var(--text-soft)">• Perfect KDA: 7</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Damage Share</div>
-                        <div class="stat-value" id="statDamageShareValue">29%</div>
-                        <div class="stat-subtext" id="statDamageShareSubtext">+8% vs role average</div>
+                    <div class="stat-box damage">
+                        <div style="position: relative; z-index: 2;">
+                            <div class="stat-label">Damage Share</div>
+                            <div class="stat-value" id="statDamageShareValue">29%</div>
+                            <div class="stat-subtext" id="statDamageShareSubtext">
+                                <span style="color: #4ade80">32.4K</span> damage per game
+                            </div>
+                        </div>
+                        <div class="stat-comparison">
+                            <div class="comparison-bar">
+                                <div class="comparison-fill" style="width: 92%"></div>
+                            </div>
+                            <div class="comparison-labels">
+                                <span>Top 8%</span>
+                                <span class="comparison-rank">Role Average</span>
+                            </div>
+                            <div class="rank-change">
+                                <span>+2% from average</span>
+                                <span style="color: var(--text-soft)">• MVP Rate: 32%</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Vision Score</div>
-                        <div class="stat-value" id="statVisionScoreValue">32</div>
-                        <div class="stat-subtext" id="statVisionScoreSubtext">Per game · Consistent vision control</div>
+                    <div class="stat-box vision">
+                        <div style="position: relative; z-index: 2;">
+                            <div class="stat-label">Vision Score</div>
+                            <div class="stat-value" id="statVisionScoreValue">32</div>
+                            <div class="stat-subtext" id="statVisionScoreSubtext">
+                                <span style="color: #60a5fa">2.1</span> control wards per game
+                            </div>
+                        </div>
+                        <div class="stat-comparison">
+                            <div class="comparison-bar">
+                                <div class="comparison-fill" style="width: 71%"></div>
+                            </div>
+                            <div class="comparison-labels">
+                                <span>Top 29%</span>
+                                <span class="comparison-rank">Mid Lane Average</span>
+                            </div>
+                            <div class="rank-change negative">
+                                <span>-2% from last month</span>
+                                <span style="color: var(--text-soft)">• 89% ward uptime</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

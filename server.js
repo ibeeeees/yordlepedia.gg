@@ -4,20 +4,34 @@ require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const axios = require("axios");
+const AWS = require('aws-sdk');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const RIOT_API_KEY = process.env.RIOT_API_KEY || "";
 
+// AWS Configuration
+AWS.config.update({
+    region: process.env.AWS_REGION,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+});
+
+const cognito = new AWS.CognitoIdentityServiceProvider();
+const cognitoConfig = {
+    UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID,
+    ClientId: process.env.AWS_COGNITO_CLIENT_ID
+};
+
 const regionToCluster = {
-  br1: "americas",
-  eun1: "europe",
-  euw1: "europe",
-  jp1: "asia",
-  kr: "asia",
-  la1: "americas",
-  la2: "americas",
-  na1: "americas",
+    br1: "americas",
+    eun1: "europe",
+    euw1: "europe",
+    jp1: "asia",
+    kr: "asia",
+    la1: "americas",
+    la2: "americas",
+    na1: "americas",
   oc1: "sea",
   tr1: "europe",
   ru: "europe",
@@ -29,10 +43,115 @@ const regionToCluster = {
 };
 
 const queueMap = {
-  420: { key: "RANKED_SOLO", label: "Ranked Solo" },
-  440: { key: "RANKED_FLEX", label: "Ranked Flex" },
-  450: { key: "ARAM", label: "ARAM" }
+    420: { key: "RANKED_SOLO", label: "Ranked Solo" },
+    440: { key: "RANKED_FLEX", label: "Ranked Flex" },
+    450: { key: "ARAM", label: "ARAM" }
 };
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+// Auth Routes
+app.post('/api/auth/signup', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        const params = {
+            ClientId: cognitoConfig.ClientId,
+            Username: email,
+            Password: password,
+            UserAttributes: [
+                {
+                    Name: 'email',
+                    Value: email
+                }
+            ]
+        };
+
+        await cognito.signUp(params).promise();
+        res.json({ message: 'User registration successful' });
+    } catch (error) {
+        console.error('Signup error:', error);
+        res.status(400).json({ 
+            message: error.message || 'Failed to create account' 
+        });
+    }
+});
+
+// Riot Games OAuth endpoint
+app.get('/api/auth/riot', (req, res) => {
+    const riotAuthUrl = 'https://auth.riotgames.com/authorize';
+    const clientId = process.env.RIOT_CLIENT_ID;
+    const redirectUri = `${process.env.APP_URL}/api/auth/riot/callback`;
+    const scope = 'openid';
+    
+    const authUrl = `${riotAuthUrl}?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+    res.redirect(authUrl);
+});
+
+// Riot Games OAuth callback
+app.get('/api/auth/riot/callback', async (req, res) => {
+    try {
+        const { code } = req.query;
+        
+        // Exchange the authorization code for tokens
+        const tokenResponse = await axios.post('https://auth.riotgames.com/token', {
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: `${process.env.APP_URL}/api/auth/riot/callback`,
+            client_id: process.env.RIOT_CLIENT_ID,
+            client_secret: process.env.RIOT_CLIENT_SECRET
+        });
+
+        const { access_token, id_token } = tokenResponse.data;
+
+        // Get user info from Riot
+        const userInfo = await axios.get('https://auth.riotgames.com/userinfo', {
+            headers: { Authorization: `Bearer ${access_token}` }
+        });
+
+        // Create or update user in Cognito
+        const cognitoParams = {
+            UserPoolId: cognitoConfig.UserPoolId,
+            Username: userInfo.data.sub,
+            UserAttributes: [
+                {
+                    Name: 'custom:riot_id',
+                    Value: userInfo.data.sub
+                },
+                {
+                    Name: 'nickname',
+                    Value: userInfo.data.username
+                }
+            ]
+        };
+
+        try {
+            await cognito.adminCreateUser(cognitoParams).promise();
+        } catch (err) {
+            if (err.code === 'UsernameExistsException') {
+                await cognito.adminUpdateUserAttributes({
+                    UserPoolId: cognitoConfig.UserPoolId,
+                    Username: userInfo.data.sub,
+                    UserAttributes: cognitoParams.UserAttributes
+                }).promise();
+            } else {
+                throw err;
+            }
+        }
+
+        // Create a session or JWT here
+        res.redirect('/dashboard');
+    } catch (error) {
+        console.error('Riot auth callback error:', error);
+        res.redirect('/profile?error=auth_failed');
+    }
+});
+
+// Profile page route
+app.get('/profile', (req, res) => {
+    res.sendFile(path.join(__dirname, 'profile.html'));
+});
 
 const fallbackPayload = {
   meta: {
