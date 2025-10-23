@@ -26,13 +26,16 @@ function createTimedCache(ttlMs) {
                 cache.delete(key);
                 return null;
             }
-            return item.value;
+            return structuredClone(item.value);
         },
         set(key, value) {
             cache.set(key, {
-                value,
+                value: structuredClone(value),
                 expiry: Date.now() + ttlMs
             });
+        },
+        delete(key) {
+            cache.delete(key);
         }
     };
 }
@@ -70,109 +73,16 @@ const queueMap = {
     450: { key: "ARAM", label: "ARAM" }
 };
 
-// Auth routes below
-
-// Auth Routes
-app.post('/api/auth/signup', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        
-        const params = {
-            ClientId: cognitoConfig.ClientId,
-            Username: email,
-            Password: password,
-            UserAttributes: [
-                {
-                    Name: 'email',
-                    Value: email
-                }
-            ]
-        };
-
-        await cognito.signUp(params).promise();
-        res.json({ message: 'User registration successful' });
-    } catch (error) {
-        console.error('Signup error:', error);
-        res.status(400).json({ 
-            message: error.message || 'Failed to create account' 
-        });
-    }
+// Video upload endpoint (stub - implement with cloud storage)
+app.post("/api/upload/highlight", (req, res) => {
+    return res.status(501).json({
+        error: "Video upload endpoint not yet implemented.",
+        message: "Please use 'Set URL' to provide a direct video link instead."
+    });
 });
 
-// Riot Games OAuth endpoint
-app.get('/api/auth/riot', (req, res) => {
-    const riotAuthUrl = 'https://auth.riotgames.com/authorize';
-    const clientId = process.env.RIOT_CLIENT_ID;
-    const redirectUri = `${process.env.APP_URL}/api/auth/riot/callback`;
-    const scope = 'openid';
-    
-    const authUrl = `${riotAuthUrl}?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
-    res.redirect(authUrl);
-});
-
-// Riot Games OAuth callback
-app.get('/api/auth/riot/callback', async (req, res) => {
-    try {
-        const { code } = req.query;
-        
-        // Exchange the authorization code for tokens
-        const tokenResponse = await axios.post('https://auth.riotgames.com/token', {
-            grant_type: 'authorization_code',
-            code,
-            redirect_uri: `${process.env.APP_URL}/api/auth/riot/callback`,
-            client_id: process.env.RIOT_CLIENT_ID,
-            client_secret: process.env.RIOT_CLIENT_SECRET
-        });
-
-        const { access_token, id_token } = tokenResponse.data;
-
-        // Get user info from Riot
-        const userInfo = await axios.get('https://auth.riotgames.com/userinfo', {
-            headers: { Authorization: `Bearer ${access_token}` }
-        });
-
-        // Create or update user in Cognito
-        const cognitoParams = {
-            UserPoolId: cognitoConfig.UserPoolId,
-            Username: userInfo.data.sub,
-            UserAttributes: [
-                {
-                    Name: 'custom:riot_id',
-                    Value: userInfo.data.sub
-                },
-                {
-                    Name: 'nickname',
-                    Value: userInfo.data.username
-                }
-            ]
-        };
-
-        try {
-            await cognito.adminCreateUser(cognitoParams).promise();
-        } catch (err) {
-            if (err.code === 'UsernameExistsException') {
-                await cognito.adminUpdateUserAttributes({
-                    UserPoolId: cognitoConfig.UserPoolId,
-                    Username: userInfo.data.sub,
-                    UserAttributes: cognitoParams.UserAttributes
-                }).promise();
-            } else {
-                throw err;
-            }
-        }
-
-        // Create a session or JWT here
-        res.redirect('/dashboard');
-    } catch (error) {
-        console.error('Riot auth callback error:', error);
-        res.redirect('/profile?error=auth_failed');
-    }
-});
-
-// Profile page route
-app.get('/profile', (req, res) => {
-    res.sendFile(path.join(__dirname, 'profile.html'));
-});
+// Authentication endpoints (currently disabled - implement with auth service of choice)
+// Supported options: Auth0, Firebase, Cognito, or custom JWT implementation
 
 const fallbackPayload = {
   meta: {
@@ -514,6 +424,36 @@ app.get("/api/ranked", async (req, res) => {
     }
 });
 
+// Leaderboard endpoint (returns demo data)
+app.get("/api/leaderboard", async (req, res) => {
+    try {
+        const { region } = req.query;
+        const normalizedRegion = (region || "kr").toLowerCase();
+
+        if (!regionToCluster[normalizedRegion]) {
+            return res.status(400).json({ error: `Unsupported region "${region}".` });
+        }
+
+        // Return mock leaderboard data for now
+        const leaderboard = [
+            { rank: 1, name: "T1 Faker", lp: 1540, wr: "64%", role: "Mid" },
+            { rank: 2, name: "Gen G Peyz", lp: 1498, wr: "61%", role: "ADC" },
+            { rank: 3, name: "DRX BeryL", lp: 1435, wr: "59%", role: "Support" },
+            { rank: 4, name: "DK Canyon", lp: 1386, wr: "57%", role: "Jungle" },
+            { rank: 5, name: "T1 Zeus", lp: 1354, wr: "60%", role: "Top" }
+        ];
+
+        res.json({
+            meta: { source: "fallback", reason: "Leaderboard data coming soon with Riot API v5 integration" },
+            leaderboard,
+            region: normalizedRegion
+        });
+    } catch (error) {
+        console.error("Leaderboard error:", error);
+        res.status(500).json({ error: "Failed to fetch leaderboard data." });
+    }
+});
+
 app.get("/api/matches", async (req, res) => {
     const { region, puuid } = req.query;
 
@@ -611,7 +551,14 @@ app.get("/", (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     if (!RIOT_API_KEY) {
-        console.warn("Warning: RIOT_API_KEY not configured. Server will return demo data only.");
+        console.warn("⚠️  RIOT_API_KEY not configured. Server will return demo data only.");
+    } else {
+        const keyPreview = `${RIOT_API_KEY.substring(0, 10)}...${RIOT_API_KEY.substring(RIOT_API_KEY.length - 5)}`;
+        console.log(`✓ RIOT_API_KEY configured: ${keyPreview}`);
+        // Prefetch configured summoners
+        prefetchConfiguredSummoners().catch(err => {
+            console.error("Error during prefetch:", err?.message || err);
+        });
     }
 });
 
@@ -623,34 +570,66 @@ async function fetchSummonerProfile(region, summonerName) {
     return cached;
   }
 
-  const response = await axios.get(
-    `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(summonerName)}`,
-    riotConfig()
-  );
-
-  const data = response.data;
-  if (data?.name) {
-    summonerCache.set(cacheKeyForSummoner(region, data.name), data);
+  // Parse gameName#tagLine format (e.g., "ibes#na1")
+  let gameName, tagLine;
+  if (summonerName.includes("#")) {
+    [gameName, tagLine] = summonerName.split("#");
+  } else {
+    gameName = summonerName;
+    tagLine = region.toUpperCase(); // Use region as tagLine
   }
-  summonerCache.set(cacheKey, data);
-  return structuredClone(data);
+  
+  try {
+    // Get Account info using Account API v1 (by-riot-id)
+    const accountUrl = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
+    console.log(`[Summoner] Fetching account: ${gameName}#${tagLine}`);
+    const accountResponse = await axios.get(accountUrl, riotConfig());
+    const { puuid, gameName: accountGameName, tagLine: accountTagLine } = accountResponse.data;
+    
+    // Get Summoner info using the PUUID (v4 endpoint which you have)
+    const summonerUrl = `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${encodeURIComponent(puuid)}`;
+    const summonerResponse = await axios.get(summonerUrl, riotConfig());
+    const data = summonerResponse.data;
+    
+    // Add the name from Account API since Summoner v4 doesn't include it
+    data.name = `${accountGameName}#${accountTagLine}`;
+    
+    if (data?.name) {
+      summonerCache.set(cacheKeyForSummoner(region, data.name), data);
+    }
+    summonerCache.set(cacheKey, data);
+    return structuredClone(data);
+  } catch (error) {
+    console.error(`[API Error] Summoner Profile: ${error.response?.status || error.code}`);
+    console.error(`[API Error] GameName#TagLine: ${gameName}#${tagLine}`);
+    console.error(`[API Error] Message: ${error.message}`);
+    throw error;
+  }
 }
 
-async function fetchRankedStats(region, summonerId) {
-  const cacheKey = `ranked:${region}:${summonerId}`;
+async function fetchRankedStats(region, summonerId, puuid) {
+  const cacheKey = `ranked:${region}:${puuid || summonerId}`;
   const cached = rankedCache.get(cacheKey);
   if (cached) {
     return cached;
   }
 
-  const response = await axios.get(
-    `https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerId}`,
-    riotConfig()
-  );
-
-  const data = response.data || [];
-  rankedCache.set(cacheKey, data);
-  return structuredClone(data);
+  try {
+    // Use by-puuid endpoint if available, otherwise use by-summoner
+    const endpoint = puuid 
+      ? `https://${region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`
+      : `https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerId}`;
+    
+    console.log(`[Ranked] Fetching from: ${endpoint.split('/').slice(-1)[0]}`);
+    const response = await axios.get(endpoint, riotConfig());
+    const data = response.data || [];
+    rankedCache.set(cacheKey, data);
+    return structuredClone(data);
+  } catch (error) {
+    console.warn(`[Ranked Stats Error]: ${error.message}`);
+    // Return empty array if we can't fetch ranked stats
+    return [];
+  }
 }
 
 async function fetchMatches(region, puuid) {
@@ -670,15 +649,24 @@ async function fetchMatches(region, puuid) {
 }
 
 async function hydrateSummoner(region, summonerName) {
-  const profile = await fetchSummonerProfile(region, summonerName);
-  const rankedStats = await fetchRankedStats(region, profile.id);
-  const matches = await fetchMatches(region, profile.puuid);
-  const payload = enrichData(profile, rankedStats, matches, region);
-  const clip = bannerClipStore.get(profile.puuid);
-  if (clip) {
-    payload.profile.bannerClip = clip;
+  try {
+    console.log(`[Prefetch] Fetching summoner profile: ${summonerName} (${region})`);
+    const profile = await fetchSummonerProfile(region, summonerName);
+    console.log(`[Prefetch] Fetching ranked stats for PUUID: ${profile.puuid}`);
+    const rankedStats = await fetchRankedStats(region, profile.id, profile.puuid);
+    console.log(`[Prefetch] Fetching matches for PUUID: ${profile.puuid}`);
+    const matches = await fetchMatches(region, profile.puuid);
+    console.log(`[Prefetch] Enriching data...`);
+    const payload = enrichData(profile, rankedStats, matches, region);
+    const clip = bannerClipStore.get(profile.puuid);
+    if (clip) {
+      payload.profile.bannerClip = clip;
+    }
+    return payload;
+  } catch (error) {
+    console.error(`[Prefetch] Error in hydrateSummoner:`, error.config?.url || error.message);
+    throw error;
   }
-  return payload;
 }
 
 async function fetchMatchIds(routing, puuid) {
@@ -739,29 +727,7 @@ function cacheKeyForSummoner(region, name) {
   return `summoner:${region}:${normalizeSummonerName(name)}`;
 }
 
-function createTimedCache(ttlMs) {
-  const store = new Map();
-  return {
-    get(key) {
-      const entry = store.get(key);
-      if (!entry) return null;
-      if (entry.expiresAt < Date.now()) {
-        store.delete(key);
-        return null;
-      }
-      return structuredClone(entry.value);
-    },
-    set(key, value) {
-      store.set(key, {
-        value: structuredClone(value),
-        expiresAt: Date.now() + ttlMs
-      });
-    },
-    delete(key) {
-      store.delete(key);
-    }
-  };
-}
+
 
 function isLikelyUrl(url) {
   try {
@@ -951,6 +917,8 @@ function enrichData(profile, rankedStats, rawMatches, region) {
 
   const rankedWins = rankedSolo?.wins ?? 0;
   const rankedLosses = rankedSolo?.losses ?? 0;
+  const totalRankedGames = rankedWins + rankedLosses;
+  const calculatedWinRate = totalRankedGames > 0 ? Math.round((rankedWins / totalRankedGames) * 100) : 0;
 
   return {
     profile: {
@@ -958,6 +926,7 @@ function enrichData(profile, rankedStats, rawMatches, region) {
       region,
       regionDisplay: region.toUpperCase(),
       level: profile.summonerLevel,
+      profileIconId: profile.profileIconId,
       bannerClip: "",
       metaLine: `${region.toUpperCase()} · Level ${profile.summonerLevel}`,
       headline,
@@ -965,6 +934,10 @@ function enrichData(profile, rankedStats, rawMatches, region) {
       roles: rolesSorted.slice(0, 3).length ? rolesSorted.slice(0, 3) : ["Fill"],
       highlights: highlights.length ? highlights.slice(0, 3) : ["Play more ranked games to unlock highlights"],
       stats: {
+        winRate: {
+          value: totalRankedGames > 0 ? `${calculatedWinRate}%` : "0%",
+          subtext: totalRankedGames > 0 ? `${rankedLosses} ranked losses` : "Unranked"
+        },
         seasonWins: {
           value: rankedWins.toString(),
           subtext: rankedSolo ? `${rankedLosses} ranked losses` : "Unranked"
@@ -989,6 +962,8 @@ function enrichData(profile, rankedStats, rawMatches, region) {
 }
 
 function riotConfig() {
+  const hasKey = !!RIOT_API_KEY;
+  const keyPreview = RIOT_API_KEY ? `${RIOT_API_KEY.substring(0, 10)}...${RIOT_API_KEY.substring(RIOT_API_KEY.length - 5)}` : "MISSING";
   return {
     headers: {
       "X-Riot-Token": RIOT_API_KEY

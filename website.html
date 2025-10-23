@@ -122,10 +122,10 @@
             text-transform: uppercase;
             letter-spacing: 3px;
             background: linear-gradient(120deg, var(--accent), var(--accent-strong));
-            background-clip: text;
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-fill-color: transparent;
+            color: transparent;
         }
 
         .nav-links {
@@ -203,8 +203,10 @@
 
         .hero-text h1 span {
             background: linear-gradient(120deg, var(--accent), var(--accent-strong), var(--accent));
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            color: transparent;
             animation: shimmer 4s linear infinite;
             background-size: 200% auto;
         }
@@ -241,7 +243,10 @@
         }
         .accent-text { 
             background: linear-gradient(120deg, var(--accent), var(--accent-strong));
-            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
         }
 
         .search-card {
@@ -1170,9 +1175,17 @@
             font-size: 0.85rem;
         }
 
-        @media (max-width: 1080px) {
+        @media (max-width: 1200px) {
+            main {
+                padding: 70px 20px 120px;
+            }
+
             .profile-summary {
                 grid-template-columns: 1fr;
+            }
+
+            .hero {
+                gap: 30px;
             }
         }
 
@@ -1181,33 +1194,169 @@
                 flex-direction: column;
                 gap: 18px;
             }
+
             .nav-links {
                 flex-wrap: wrap;
                 justify-content: center;
+                width: 100%;
             }
+
             main {
-                padding-top: 70px;
+                padding-top: 60px;
+            }
+
+            .hero-text h1 {
+                font-size: clamp(2rem, 4vw, 3rem);
+            }
+
+            .search-card {
+                padding: 24px;
+            }
+
+            .cta-banner {
+                padding: 40px 24px;
             }
         }
 
-        @media (max-width: 720px) {
+        @media (max-width: 768px) {
+            :root {
+                font-size: 15px;
+            }
+
+            nav {
+                padding: 14px 16px;
+            }
+
             .search-wrapper {
                 flex-direction: column;
+                gap: 10px;
             }
+
             .region-select,
             .search-input,
             .search-btn {
                 width: 100%;
+                padding: 14px 18px;
+                font-size: 1rem;
             }
+
             .match-card {
                 grid-template-columns: 1fr;
-                gap: 12px;
+                gap: 14px;
+                padding: 14px 16px;
                 text-align: left;
             }
+
             .section-header {
                 flex-direction: column;
                 gap: 12px;
                 align-items: flex-start;
+            }
+
+            .stat-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .champ-grid {
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 16px;
+            }
+
+            .community-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-inner {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .cta-banner {
+                padding: 32px 20px;
+            }
+
+            .cta-banner h2 {
+                font-size: clamp(1.6rem, 3vw, 2.2rem);
+            }
+        }
+
+        @media (max-width: 600px) {
+            main {
+                padding: 60px 16px 80px;
+            }
+
+            .hero-text h1 {
+                font-size: 1.8rem;
+                line-height: 1.2;
+            }
+
+            .hero-text-box {
+                padding: 16px;
+            }
+
+            .search-card {
+                padding: 16px;
+                border-radius: 14px;
+            }
+
+            .search-header {
+                flex-direction: column;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+
+            .profile-identity {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .avatar.avatar-lg {
+                width: 80px;
+                height: 80px;
+                border-width: 3px;
+                margin: 0 auto;
+            }
+
+            .stat-grid {
+                gap: 12px;
+            }
+
+            .leaderboard table {
+                font-size: 0.9rem;
+            }
+
+            .leaderboard th,
+            .leaderboard td {
+                padding: 12px 8px;
+            }
+
+            .coming-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .cta-actions {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .cta-actions button {
+                width: 100%;
+            }
+
+            .chat-panel {
+                width: calc(100% - 20px);
+                bottom: 70px;
+                right: 10px;
+                left: 10px;
+            }
+
+            .profile-banner {
+                height: 200px;
             }
         }
     </style>
@@ -1301,17 +1450,17 @@
                         <div class="stat-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--stat-box-gap)">
                             <div class="stat-box wins">
                                 <h4 style="font-size: 1.1rem;">Win Rate</h4>
-                                <div style="font-size: 1.8rem; font-weight: 600;">52.3%</div>
+                                <div id="statWinRateValue" style="font-size: 1.8rem; font-weight: 600;">52.3%</div>
                                 <div class="stat-comparison">
                                     <div class="comparison-bar">
-                                        <div class="comparison-fill" style="width: 65%"></div>
+                                        <div id="statWinRateFill" class="comparison-fill" style="width: 65%"></div>
                                     </div>
                                     <div class="comparison-labels">
-                                        <span>Average: 49.8%</span>
-                                        <span class="comparison-rank">Top 35%</span>
+                                        <span id="statWinRateAvg">Average: 49.8%</span>
+                                        <span class="comparison-rank" id="statWinRateRank">Top 35%</span>
                                     </div>
                                     <div class="rank-change">
-                                        <span>+2.1%</span>
+                                        <span id="statWinRateChange">+2.1%</span>
                                         <span>Last 30 days</span>
                                     </div>
                                 </div>
@@ -1319,17 +1468,17 @@
 
                             <div class="stat-box kda">
                                 <h4 style="font-size: 1.1rem;">KDA Ratio</h4>
-                                <div style="font-size: 1.8rem; font-weight: 600;">3.42</div>
+                                <div id="statKDAValue" style="font-size: 1.8rem; font-weight: 600;">3.42</div>
                                 <div class="stat-comparison">
                                     <div class="comparison-bar">
-                                        <div class="comparison-fill" style="width: 78%"></div>
+                                        <div id="statKDAFill" class="comparison-fill" style="width: 78%"></div>
                                     </div>
                                     <div class="comparison-labels">
-                                        <span>Average: 2.89</span>
-                                        <span class="comparison-rank">Top 22%</span>
+                                        <span id="statKDAAvg">Average: 2.89</span>
+                                        <span class="comparison-rank" id="statKDARank">Top 22%</span>
                                     </div>
                                     <div class="rank-change">
-                                        <span>+0.31</span>
+                                        <span id="statKDAChange">+0.31</span>
                                         <span>Last 30 days</span>
                                     </div>
                                 </div>
@@ -1337,17 +1486,17 @@
 
                             <div class="stat-box damage">
                                 <h4 style="font-size: 1.1rem;">Avg Damage</h4>
-                                <div style="font-size: 1.8rem; font-weight: 600;">24.8K</div>
+                                <div id="statDamageValue" style="font-size: 1.8rem; font-weight: 600;">24.8K</div>
                                 <div class="stat-comparison">
                                     <div class="comparison-bar">
-                                        <div class="comparison-fill" style="width: 72%"></div>
+                                        <div id="statDamageFill" class="comparison-fill" style="width: 72%"></div>
                                     </div>
                                     <div class="comparison-labels">
-                                        <span>Average: 21.2K</span>
-                                        <span class="comparison-rank">Top 28%</span>
+                                        <span id="statDamageAvg">Average: 21.2K</span>
+                                        <span class="comparison-rank" id="statDamageRank">Top 28%</span>
                                     </div>
                                     <div class="rank-change negative">
-                                        <span>-1.2K</span>
+                                        <span id="statDamageChange">-1.2K</span>
                                         <span>Last 30 days</span>
                                     </div>
                                 </div>
@@ -1355,17 +1504,17 @@
 
                             <div class="stat-box vision">
                                 <h4 style="font-size: 1.1rem;">Vision Score</h4>
-                                <div style="font-size: 1.8rem; font-weight: 600;">42.6</div>
+                                <div id="statVisionValue" style="font-size: 1.8rem; font-weight: 600;">42.6</div>
                                 <div class="stat-comparison">
                                     <div class="comparison-bar">
-                                        <div class="comparison-fill" style="width: 85%"></div>
+                                        <div id="statVisionFill" class="comparison-fill" style="width: 85%"></div>
                                     </div>
                                     <div class="comparison-labels">
-                                        <span>Average: 35.4</span>
-                                        <span class="comparison-rank">Top 15%</span>
+                                        <span id="statVisionAvg">Average: 35.4</span>
+                                        <span class="comparison-rank" id="statVisionRank">Top 15%</span>
                                     </div>
                                     <div class="rank-change">
-                                        <span>+3.2</span>
+                                        <span id="statVisionChange">+3.2</span>
                                         <span>Last 30 days</span>
                                     </div>
                                 </div>
@@ -1879,6 +2028,14 @@
 
         function renderProfile() {
             const profile = state.profile || fallbackData.profile;
+            
+            // Update avatar with summoner icon
+            const avatar = document.querySelector('.avatar.avatar-lg');
+            if (avatar) {
+                const iconId = profile.profileIconId || 4569; // Default icon ID
+                avatar.style.backgroundImage = `url('https://ddragon.leagueoflegends.com/cdn/14.15.1/img/profileicon/${iconId}.png')`;
+            }
+            
             // Update banner based on clip status
             const banner = document.getElementById('profileBanner');
             if (banner) {
@@ -1907,7 +2064,11 @@
                     `;
                 }
             }
-            document.getElementById("profileName").textContent = profile.name ?? "Summoner";
+            
+            console.log("Rendering profile with name:", profile.name, "full profile:", profile);
+            const nameEl = document.getElementById("profileName");
+            const nameValue = profile.name ?? "Summoner";
+            nameEl.textContent = nameValue;
             document.getElementById("profileMeta").textContent =
                 profile.metaLine ?? `${profile.regionDisplay ?? "NA"} · Level ${profile.level ?? "--"}`;
             document.getElementById("rankLabel").textContent = profile.rankLabel ?? "Ranked Solo · Unranked";
@@ -1941,6 +2102,38 @@
                 stats.visionScore?.value ?? fallbackData.profile.stats.visionScore.value;
             document.getElementById("statVisionScoreSubtext").textContent =
                 stats.visionScore?.subtext ?? fallbackData.profile.stats.visionScore.subtext;
+            
+            // Update spotlight stats (under logo)
+            updateSpotlightStats(profile);
+        }
+
+        function updateSpotlightStats(profile) {
+            const stats = profile.stats || {};
+            
+            // Win Rate from calculated stat
+            const winRateValue = stats.winRate?.value || "0%";
+            
+            // KDA Ratio from averageKDA
+            const kdaValue = stats.averageKDA?.value || "3.42";
+            
+            // Damage Share - format as percentage or value
+            const damageValue = stats.damageShare?.value || "24.8K";
+            
+            // Vision Score
+            const visionValue = stats.visionScore?.value || "42.6";
+            
+            // Update DOM elements
+            const winRateEl = document.getElementById("statWinRateValue");
+            if (winRateEl) winRateEl.textContent = winRateValue;
+            
+            const kdaEl = document.getElementById("statKDAValue");
+            if (kdaEl) kdaEl.textContent = kdaValue;
+            
+            const damageEl = document.getElementById("statDamageValue");
+            if (damageEl) damageEl.textContent = damageValue;
+            
+            const visionEl = document.getElementById("statVisionValue");
+            if (visionEl) visionEl.textContent = visionValue;
         }
 
         function renderMatches(queueKey = activeQueue) {
@@ -2076,10 +2269,14 @@
                 console.info(`Served from cache. Cached at: ${payload.meta.cachedAt || "unknown time"}.`);
             }
             const isLive = payload?.meta?.source === "riot";
-            const baseProfile = clone(fallbackData.profile);
-            const incomingProfile = payload?.profile || {};
-            const mergedStats = { ...baseProfile.stats, ...(incomingProfile.stats || {}) };
-            state.profile = { ...baseProfile, ...incomingProfile, stats: mergedStats };
+            
+            // Use incoming profile directly, fallback to default if missing
+            if (payload?.profile) {
+                state.profile = clone(payload.profile);
+            } else {
+                const baseProfile = clone(fallbackData.profile);
+                state.profile = baseProfile;
+            }
 
             const baseMatches = clone(fallbackData.matches);
             const incomingMatches = payload?.matches || {};
@@ -2331,27 +2528,58 @@
         document.addEventListener('DOMContentLoaded', function() {
             const html = document.documentElement;
             html.style.scrollBehavior = 'smooth';
-            html.style.scrollPaddingTop = '80px';
+            html.style.scrollPaddingTop = '0px';
 
-            // Update all navigation links
+            // Handle all navigation links
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {
                 anchor.addEventListener('click', function (e) {
                     e.preventDefault();
                     const targetId = this.getAttribute('href').slice(1);
-                    const target = document.getElementById(targetId);
                     
-                    if (target) {
-                        const headerOffset = 80;
-                        const elementPosition = target.getBoundingClientRect().top;
-                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
+                    // Special case: scroll to top for "Search"
+                    if (targetId === 'search') {
                         window.scrollTo({
-                            top: offsetPosition,
+                            top: 0,
                             behavior: 'smooth'
                         });
+                    } else {
+                        const target = document.getElementById(targetId);
+                        if (target) {
+                            // Scroll to target with header offset
+                            const headerHeight = 80;
+                            const elementPosition = target.getBoundingClientRect().top + window.pageYOffset;
+                            const offsetPosition = elementPosition - headerHeight;
+
+                            window.scrollTo({
+                                top: offsetPosition,
+                                behavior: 'smooth'
+                            });
+                        }
                     }
                 });
             });
+
+            // Also handle the "My Profile" button in nav if it has a scroll action
+            const profileBtn = document.querySelector('.profile-btn');
+            if (profileBtn) {
+                profileBtn.addEventListener('click', function(e) {
+                    const href = this.getAttribute('data-scroll');
+                    if (href) {
+                        e.preventDefault();
+                        const target = document.getElementById(href);
+                        if (target) {
+                            const headerHeight = 80;
+                            const elementPosition = target.getBoundingClientRect().top + window.pageYOffset;
+                            const offsetPosition = elementPosition - headerHeight;
+
+                            window.scrollTo({
+                                top: offsetPosition,
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                });
+            }
         });
 
         // Add mock data for champions
