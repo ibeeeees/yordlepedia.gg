@@ -75,7 +75,9 @@ const queueMap = {
 app.get("/api/health", (req, res) => {
     return res.status(200).json({
         status: "healthy",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        hasApiKey: !!RIOT_API_KEY,
+        apiKeyPrefix: RIOT_API_KEY ? RIOT_API_KEY.substring(0, 10) + "..." : "NOT SET"
     });
 });
 
