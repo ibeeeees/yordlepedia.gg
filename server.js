@@ -543,6 +543,15 @@ app.get("/api/matches", async (req, res) => {
     }
 });
 
+// Legal pages
+app.get("/privacy", (req, res) => {
+    res.sendFile(path.join(__dirname, "privacy.html"));
+});
+
+app.get("/tos", (req, res) => {
+    res.sendFile(path.join(__dirname, "tos.html"));
+});
+
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "website.html"));
 });
