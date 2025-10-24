@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yordlepedia Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: transparent;
+            color: #f0e6d2;
+            overflow: hidden;
+            width: 1920px;
+            height: 1080px;
+            position: relative;
+        }
+
+        /* Loading Badge (Top Left) */
+        .loading-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 20, 40, 0.9);
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 2px solid #0bc6e3;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .loading-badge.connected {
+            border-color: #00ff88;
+        }
+
+        .loading-badge.disconnected {
+            border-color: #ff4458;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #0bc6e3;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #00ff88;
+        }
+
+        .status-dot.disconnected {
+            background: #ff4458;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Player Stats Panel (Top Right) */
+        .stats-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(10, 20, 40, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #c89b3c;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+            min-width: 300px;
+            display: none; /* Hidden until game starts */
+        }
+
+        .stats-panel.visible {
+            display: block;
+        }
+
+        .stats-header {
+            font-size: 18px;
+            font-weight: bold;
+            color: #c89b3c;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(200, 155, 60, 0.3);
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #a09b8c;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            color: #f0e6d2;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .stat-value.positive {
+            color: #00ff88;
+        }
+
+        .stat-value.negative {
+            color: #ff4458;
+        }
+
+        /* Team Cooldowns Panel (Bottom Left) */
+        .cooldowns-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(10, 20, 40, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #0bc6e3;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+            display: none; /* Hidden until game starts */
+        }
+
+        .cooldowns-panel.visible {
+            display: block;
+        }
+
+        .cooldowns-header {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0bc6e3;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .champion-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .champion-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #1e2328;
+            border: 2px solid #c89b3c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: #c89b3c;
+        }
+
+        .abilities {
+            display: flex;
+            gap: 6px;
+        }
+
+        .ability {
+            width: 40px;
+            height: 40px;
+            background: #1e2328;
+            border: 2px solid #555;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #f0e6d2;
+            position: relative;
+        }
+
+        .ability.ready {
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .ability.cooldown {
+            border-color: #ff4458;
+            background: rgba(255, 68, 88, 0.1);
+        }
+
+        .ability-timer {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 10px;
+            color: #ff4458;
+        }
+
+        /* AI Tips Box (Center) */
+        .ai-tip-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 20, 40, 0.98);
+            padding: 25px 30px;
+            border-radius: 12px;
+            border: 3px solid #c89b3c;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+            max-width: 600px;
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .ai-tip-box.visible {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -45%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+
+        .tip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .tip-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #c89b3c;
+            text-transform: uppercase;
+        }
+
+        .tip-priority {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .tip-priority.low {
+            background: #00ff88;
+            color: #0a1428;
+        }
+
+        .tip-priority.medium {
+            background: #ff9800;
+            color: #0a1428;
+        }
+
+        .tip-priority.high {
+            background: #ff4458;
+            color: #ffffff;
+        }
+
+        .tip-content {
+            color: #f0e6d2;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading/Connection Badge -->
+    <div class="loading-badge disconnected" id="connection-badge">
+        <div class="status-dot disconnected" id="status-dot"></div>
+        <span id="connection-text">Waiting for League Client...</span>
+    </div>
+
+    <!-- Player Stats Panel -->
+    <div class="stats-panel" id="stats-panel">
+        <div class="stats-header">Your Stats</div>
+        <div class="stat-item">
+            <span class="stat-label">Level</span>
+            <span class="stat-value" id="level">1</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">CS</span>
+            <span class="stat-value" id="cs">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">CS/min</span>
+            <span class="stat-value" id="cs-per-min">0.0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Gold/min</span>
+            <span class="stat-value" id="gold-per-min">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Team Gold</span>
+            <span class="stat-value" id="team-gold">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Vision/min</span>
+            <span class="stat-value" id="vision-per-min">0.0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Gold Diff</span>
+            <span class="stat-value" id="gold-diff">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">KDA</span>
+            <span class="stat-value" id="kda">0/0/0</span>
+        </div>
+    </div>
+
+    <!-- Team Cooldowns Panel REMOVED per user request -->
+
+    <!-- AI Tip Box -->
+    <div class="ai-tip-box" id="ai-tip-box">
+        <div class="tip-header">
+            <span class="tip-title">AI Coach Tip</span>
+            <span class="tip-priority medium" id="tip-priority">Medium</span>
+        </div>
+        <div class="tip-content" id="tip-content">
+            Focus on farming under tower. Your CS/min is below target. Try to secure cannon minions for extra gold.
+        </div>
+    </div>
+
+    <script>
+        /**
+         * OVERLAY RENDERER SCRIPT
+         *
+         * Purpose: Updates overlay UI based on game data from main process
+         * Communication: Uses window.electronAPI from preload.js
+         */
+
+        // Listen for connection status updates
+        if (window.electronAPI) {
+            window.electronAPI.onConnectionStatus((status) => {
+                console.log('Connection status:', status);
+
+                const badge = document.getElementById('connection-badge');
+                const dot = document.getElementById('status-dot');
+                const text = document.getElementById('connection-text');
+
+                if (status.connected && status.inGame) {
+                    badge.className = 'loading-badge connected';
+                    dot.className = 'status-dot connected';
+                    text.textContent = 'Connected - In Game';
+
+                    // Show stats panel
+                    document.getElementById('stats-panel').classList.add('visible');
+                } else if (status.connected) {
+                    badge.className = 'loading-badge connected';
+                    dot.className = 'status-dot connected';
+                    text.textContent = `Connected - ${status.phase || 'Lobby'}`;
+
+                    // Hide panel when not in game
+                    document.getElementById('stats-panel').classList.remove('visible');
+                } else {
+                    badge.className = 'loading-badge disconnected';
+                    dot.className = 'status-dot disconnected';
+                    text.textContent = status.message || 'Waiting for League Client...';
+
+                    // Hide panel when disconnected
+                    document.getElementById('stats-panel').classList.remove('visible');
+                }
+            });
+
+            // Listen for game data updates
+            window.electronAPI.onGameDataUpdate((data) => {
+                console.log('Game data update:', data);
+                updatePlayerStats(data);
+            });
+
+            // Listen for AI tip toggle
+            window.electronAPI.onToggleTipBox((show) => {
+                const tipBox = document.getElementById('ai-tip-box');
+                if (show) {
+                    tipBox.classList.add('visible');
+                } else {
+                    tipBox.classList.remove('visible');
+                }
+            });
+        } else {
+            console.error('❌ electronAPI not available - preload script may have failed');
+        }
+
+        /**
+         * Update player stats display
+         * @param {Object} data - Game data from Live Client Data API
+         */
+        function updatePlayerStats(data) {
+            console.log('📊 Updating player stats');
+
+            if (!data || !data.activePlayer) {
+                console.warn('⚠️ No active player data available');
+                return;
+            }
+
+            const player = data.activePlayer;
+            const allGameData = data.allGameData;
+
+            // Get game time in minutes
+            const gameTime = allGameData?.gameData?.gameTime || 0;
+            const gameTimeMinutes = gameTime > 0 ? gameTime / 60 : 0.01; // Prevent division by zero
+
+            console.log('⏱️ Game time:', gameTime.toFixed(2), 'seconds (', gameTimeMinutes.toFixed(2), 'minutes)');
+
+            // Level - from activePlayer.level
+            if (player.level !== undefined) {
+                document.getElementById('level').textContent = player.level;
+            }
+
+            // Gold/min - calculated from current gold and game time
+            const currentGold = player.currentGold || 0;
+            if (gameTime > 0) {
+                const goldPerMin = Math.round(currentGold / gameTimeMinutes);
+                document.getElementById('gold-per-min').textContent = goldPerMin;
+            }
+
+            // Find player's scores in allGameData.allPlayers
+            if (allGameData && allGameData.allPlayers && allGameData.allPlayers.length > 0) {
+                const playerName = player.summonerName;
+                const playerData = allGameData.allPlayers.find(p => p.summonerName === playerName);
+
+                if (playerData && playerData.scores) {
+                    // CS (Creep Score)
+                    const creepScore = playerData.scores.creepScore || 0;
+                    document.getElementById('cs').textContent = creepScore;
+                    console.log('🌾 CS:', creepScore);
+
+                    // CS/min
+                    if (gameTime > 0) {
+                        const csPerMin = (creepScore / gameTimeMinutes).toFixed(1);
+                        document.getElementById('cs-per-min').textContent = csPerMin;
+                        console.log('📊 CS/min:', csPerMin);
+                    }
+
+                    // KDA
+                    const kills = playerData.scores.kills || 0;
+                    const deaths = playerData.scores.deaths || 0;
+                    const assists = playerData.scores.assists || 0;
+                    document.getElementById('kda').textContent = `${kills}/${deaths}/${assists}`;
+                    console.log('⚔️ KDA:', `${kills}/${deaths}/${assists}`);
+
+                    // Vision/min
+                    const wardScore = playerData.scores.wardScore || 0;
+                    if (gameTime > 0) {
+                        const visionPerMin = (wardScore / gameTimeMinutes).toFixed(1);
+                        document.getElementById('vision-per-min').textContent = visionPerMin;
+                        console.log('👁️ Vision/min:', visionPerMin);
+                    }
+                }
+
+                // Calculate team stats
+                calculateTeamStats(allGameData, player, gameTimeMinutes);
+            }
+        }
+
+        /**
+         * Calculate team-based statistics
+         * @param {Object} allGameData - All game data
+         * @param {Object} activePlayer - Active player data
+         * @param {number} gameTimeMinutes - Game time in minutes
+         */
+        function calculateTeamStats(allGameData, activePlayer, gameTimeMinutes) {
+            const allPlayers = allGameData.allPlayers;
+
+            // Find active player's summonerName to determine team
+            const activePlayerName = activePlayer.summonerName;
+            const activePlayerData = allPlayers.find(p => p.summonerName === activePlayerName);
+
+            if (!activePlayerData) return;
+
+            const activePlayerTeam = activePlayerData.team;
+
+            // ✅ FIXED: More accurate gold calculation
+            // Base gold values per event type
+            const GOLD_VALUES = {
+                CS_MIN: 18,        // Minimum CS gold
+                CS_AVG: 21,        // Average CS gold
+                KILL: 300,         // Kill gold (base)
+                ASSIST: 150,       // Assist gold (base)
+                BASE_GOLD_RATE: 116.67 // Passive gold per minute (7000 gold at 60 min)
+            };
+
+            let teamGold = 0;
+            let enemyGold = 0;
+
+            allPlayers.forEach(player => {
+                if (!player.scores) return;
+
+                // Calculate estimated total gold more accurately
+                const csGold = (player.scores.creepScore || 0) * GOLD_VALUES.CS_AVG;
+                const killGold = (player.scores.kills || 0) * GOLD_VALUES.KILL;
+                const assistGold = (player.scores.assists || 0) * GOLD_VALUES.ASSIST;
+                const passiveGold = gameTimeMinutes * GOLD_VALUES.BASE_GOLD_RATE;
+
+                const estimatedGold = csGold + killGold + assistGold + passiveGold;
+
+                if (player.team === activePlayerTeam) {
+                    teamGold += estimatedGold;
+                } else {
+                    enemyGold += estimatedGold;
+                }
+            });
+
+            document.getElementById('team-gold').textContent = Math.round(teamGold);
+
+            // Gold Diff (team gold - enemy gold)
+            const goldDiff = teamGold - enemyGold;
+            const goldDiffElement = document.getElementById('gold-diff');
+            goldDiffElement.textContent = goldDiff > 0 ? `+${Math.round(goldDiff)}` : Math.round(goldDiff);
+
+            // Color code gold diff
+            if (goldDiff > 0) {
+                goldDiffElement.className = 'stat-value positive';
+            } else if (goldDiff < 0) {
+                goldDiffElement.className = 'stat-value negative';
+            } else {
+                goldDiffElement.className = 'stat-value';
+            }
+        }
+
+        console.log('✅ Overlay renderer loaded');
+    </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{
+  "name": "yordlepedia-overlay",
+  "version": "1.0.0",
+  "description": "League of Legends in-game overlay with real-time stats and AI coaching",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "keywords": [
+    "league-of-legends",
+    "overlay",
+    "electron",
+    "gaming",
+    "lcu-api"
+  ],
+  "author": "Yordlepedia Team",
+  "license": "MIT",
+  "dependencies": {
+    "electron": "^28.0.0",
+    "league-connect": "^5.5.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.yordlepedia.overlay",
+    "productName": "Yordlepedia",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/**/*",
+      "node_modules/league-connect/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/yordlepedia-icon.svg"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/yordlepedia-icon.svg"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/yordlepedia-icon.svg"
+    }
+  }
+}

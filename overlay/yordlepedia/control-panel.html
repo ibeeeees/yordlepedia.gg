@@ -35,6 +35,17 @@
                         Enable AI Tips
                     </label>
                 </div>
+                <div class="setting-item">
+                    <label>
+                        Overlay Transparency: <span id="transparency-value">90%</span>
+                        <input type="range" id="transparency-slider" min="10" max="100" value="90" step="5">
+                    </label>
+                </div>
+                <div class="setting-item hotkey-setting">
+                    <label style="display: block; margin-bottom: 8px;">Toggle Hotkey:</label>
+                    <div id="hotkey-display" class="hotkey-display"></div>
+                    <button id="change-hotkey-btn" class="change-hotkey-btn">Change Hotkey</button>
+                </div>
             </div>
 
             <div class="section">
@@ -74,9 +85,10 @@
 
             <div class="section">
                 <h2>Quick Actions</h2>
-                <button class="action-btn primary" id="test-overlay">Test Overlay</button>
+                <button class="action-btn primary" id="test-overlay">Test Overlay with Sample Data</button>
+                <button class="action-btn" id="edit-layout-btn">Edit Layout Mode</button>
                 <button class="action-btn" id="toggle-tips-btn">Toggle AI Tips</button>
-                <button class="action-btn" id="reset-cooldowns">Reset Cooldowns</button>
+                <button class="action-btn" id="reset-positions-btn">Reset Panel Positions</button>
             </div>
 
             <div class="section">

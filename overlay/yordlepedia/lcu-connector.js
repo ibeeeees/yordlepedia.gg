@@ -1,4 +1,5 @@
-const { authenticate, createHttp1Request, createWebSocketConnection } = require('league-connect');
+const LeagueConnect = require('league-connect');
+const { authenticate, request } = LeagueConnect;
 
 class LCUConnector {
   constructor() {
@@ -13,9 +14,8 @@ class LCUConnector {
       console.log('Attempting to connect to League Client...');
       this.credentials = await authenticate();
       this.connected = true;
-      console.log(' Connected to League Client!');
-      console.log('   Port:', this.credentials.port);
-      console.log('   Password:', this.credentials.password.substring(0, 10) + '...');
+      console.log('Connected to League Client!');
+      console.log('Port:', this.credentials.port);
 
       // Setup WebSocket for live events
       await this.setupWebSocket();
@@ -30,7 +30,12 @@ class LCUConnector {
 
   async setupWebSocket() {
     try {
-      this.ws = await createWebSocketConnection(this.credentials);
+      // WebSocket support varies by version, skip for now
+      console.log('WebSocket not available in this version - using polling only');
+      return;
+
+      /*
+      this.ws = await createWsConnection(this.credentials);
       console.log(' WebSocket connected for live events');
 
       // Subscribe to game events
@@ -51,7 +56,7 @@ class LCUConnector {
         console.log(' WebSocket disconnected');
         this.connected = false;
       });
-
+      */
     } catch (error) {
       console.error('Failed to setup WebSocket:', error);
     }
@@ -63,72 +68,21 @@ class LCUConnector {
     }
 
     try {
-      const response = await createHttp1Request(
+      const response = await request(
         {
           method,
           url: endpoint,
         },
         this.credentials
       );
-      return response.json();
+      // Response is already a Response object in v5.5.0
+      if (response && typeof response.json === 'function') {
+        return await response.json();
+      }
+      return response;
     } catch (error) {
       console.error(`API Request failed [${method} ${endpoint}]:`, error.message);
       throw error;
-    }
-  }
-
-  // Get active player data
-  async getActivePlayerData() {
-    try {
-      const data = await this.makeRequest('/liveclientdata/activeplayer');
-      return data;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  // Get player stats
-  async getPlayerStats() {
-    try {
-      const data = await this.makeRequest('/liveclientdata/activeplayer');
-      return {
-        summonerName: data.summonerName,
-        level: data.level,
-        currentGold: data.currentGold,
-        championStats: data.championStats
-      };
-    } catch (error) {
-      return null;
-    }
-  }
-
-  // Get player scores (CS, vision, etc.)
-  async getPlayerScores() {
-    try {
-      const data = await this.makeRequest('/liveclientdata/playerscores');
-      return data;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  // Get all game stats
-  async getAllGameData() {
-    try {
-      const data = await this.makeRequest('/liveclientdata/allgamedata');
-      return data;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  // Get game stats
-  async getGameStats() {
-    try {
-      const data = await this.makeRequest('/liveclientdata/gamestats');
-      return data;
-    } catch (error) {
-      return null;
     }
   }
 
@@ -166,13 +120,34 @@ class LCUConnector {
     }
   }
 
+  // ✅ NEW: Remove specific event listener (prevents memory leaks)
+  removeListener(event, callback) {
+    if (this.listeners[event]) {
+      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+    }
+  }
+
+  // ✅ NEW: Remove all listeners for an event or all events
+  removeAllListeners(event) {
+    if (event) {
+      delete this.listeners[event];
+      console.log(`🧹 Removed all listeners for event: ${event}`);
+    } else {
+      this.listeners = {};
+      console.log('🧹 Removed all event listeners');
+    }
+  }
+
   disconnect() {
     if (this.ws) {
       this.ws.close();
+      this.ws = null; // ✅ Clear reference
     }
     this.connected = false;
-    console.log('Disconnected from League Client');
+    this.credentials = null; // ✅ Clear credentials
+    console.log('🔌 Disconnected from League Client');
   }
+
 }
 
 module.exports = LCUConnector;
