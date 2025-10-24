@@ -16,6 +16,15 @@ console.log(`[Init] API Key loaded: ${RIOT_API_KEY ? RIOT_API_KEY.substring(0, 2
 app.use(express.json());
 app.use(cors());
 
+// Disable caching for Vercel serverless functions
+// Force dynamic responses, don't cache at build time
+app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    next();
+});
+
 // Cache utilities
 function createTimedCache(ttlMs) {
     const cache = new Map();
