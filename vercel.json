@@ -4,36 +4,12 @@
     {
       "src": "api/index.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "website.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "privacy.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "tos.html",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "api/index.js"
-    },
-    {
-      "src": "/privacy",
-      "dest": "privacy.html"
-    },
-    {
-      "src": "/tos",
-      "dest": "tos.html"
-    },
-    {
       "src": "/(.*)",
-      "dest": "website.html"
+      "dest": "api/index.js"
     }
   ],
   "env": {

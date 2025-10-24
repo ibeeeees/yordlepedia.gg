@@ -301,6 +301,15 @@ function enrichData(summonerData, rankedStats, matches, puuid) {
 // Serve static files from parent directory (for Vercel)
 app.use(express.static(path.join(__dirname, '..')));
 
+// Legal pages
+app.get('/privacy', (req, res) => {
+    res.sendFile(path.join(__dirname, '../privacy.html'));
+});
+
+app.get('/tos', (req, res) => {
+    res.sendFile(path.join(__dirname, '../tos.html'));
+});
+
 // SPA fallback - serve website.html for any unmatched routes
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../website.html'));
