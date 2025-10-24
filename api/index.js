@@ -80,6 +80,82 @@ app.get("/api/health", (req, res) => {
     });
 });
 
+// Summoner search with query parameters (matches frontend expectations)
+app.get("/api/summoner", async (req, res) => {
+    const { region, name } = req.query;
+
+    if (!region || !name) {
+        return res.status(400).json({ error: "Query parameters 'region' and 'name' are required." });
+    }
+
+    try {
+        const normalizedRegion = region.toLowerCase();
+        let gameName, tagLine;
+        
+        if (name.includes("#")) {
+            [gameName, tagLine] = name.split("#");
+        } else {
+            gameName = name;
+            tagLine = ""; 
+        }
+
+        if (!RIOT_API_KEY) {
+            return res.json({
+                profile: { name: `${gameName}#${tagLine || 'NA1'}`, region, level: 1, profileIconId: 0 },
+                matches: { RANKED_SOLO: [], RANKED_FLEX: [], ARAM: [] },
+                champions: []
+            });
+        }
+
+        // Fetch account by game name and tag
+        const accountResponse = await axios.get(
+            `https://americas.api.riotgames.com/riot/account/v1/accounts/by-game-name/${encodeURIComponent(gameName)}/by-tag/${encodeURIComponent(tagLine)}`,
+            { headers: { "X-Riot-Token": RIOT_API_KEY } }
+        );
+
+        const { puuid, gameName: accountGameName, tagLine: accountTagLine } = accountResponse.data;
+
+        // Fetch summoner by PUUID (always from na1 for now)
+        const summonerResponse = await axios.get(
+            `https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
+            { headers: { "X-Riot-Token": RIOT_API_KEY } }
+        );
+
+        let summonerData = summonerResponse.data;
+        summonerData.name = `${accountGameName}#${accountTagLine}`;
+
+        // Fetch ranked stats
+        const rankedResponse = await axios.get(
+            `https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerData.id}`,
+            { headers: { "X-Riot-Token": RIOT_API_KEY } }
+        );
+
+        const rankedStats = rankedResponse.data.find(e => e.queueType === "RANKED_SOLO_5x5") || {};
+
+        // Build response
+        const response = {
+            profile: {
+                name: summonerData.name,
+                region: normalizedRegion,
+                level: summonerData.summonerLevel,
+                profileIconId: summonerData.profileIconId,
+                rank: rankedStats.tier || "UNRANKED",
+                division: rankedStats.rank || "",
+                lp: rankedStats.leaguePoints || 0,
+                wins: rankedStats.wins || 0,
+                losses: rankedStats.losses || 0
+            },
+            matches: { RANKED_SOLO: [], RANKED_FLEX: [], ARAM: [] },
+            champions: []
+        };
+
+        return res.json(response);
+    } catch (error) {
+        console.error("Summoner search error:", error.response?.data || error.message);
+        return res.status(404).json({ error: "Summoner not found" });
+    }
+});
+
 // Video upload endpoint (stub - implement with cloud storage)
 app.post("/api/upload/highlight", (req, res) => {
     return res.status(501).json({
