@@ -7,7 +7,7 @@ const axios = require("axios");
 const cors = require("cors");
 
 const app = express();
-const RIOT_API_KEY = process.env.RIOT_API_KEY || "";
+const RIOT_API_KEY = (process.env.RIOT_API_KEY || "").trim();
 
 // Middleware setup
 app.use(express.json());
