@@ -115,9 +115,9 @@ app.get("/api/summoner", async (req, res) => {
             tagLine = ""; // Will fail if tag is required
         }
 
-        // Fetch account by game name and tag
+        // Fetch account by riot-id (gameName#tagLine)
         const accountResponse = await axios.get(
-            `https://americas.api.riotgames.com/riot/account/v1/accounts/by-game-name/${encodeURIComponent(gameName)}/by-tag/${encodeURIComponent(tagLine)}`,
+            `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`,
             {
                 headers: { "X-Riot-Token": RIOT_API_KEY }
             }
@@ -258,9 +258,9 @@ app.get("/api/summoner/:summonerName", async (req, res) => {
             tagLine = ""; // Will fail if tag is required
         }
 
-        // Fetch account by game name and tag
+        // Fetch account by riot-id (gameName#tagLine)
         const accountResponse = await axios.get(
-            `https://americas.api.riotgames.com/riot/account/v1/accounts/by-game-name/${encodeURIComponent(gameName)}/by-tag/${encodeURIComponent(tagLine)}`,
+            `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`,
             {
                 headers: { "X-Riot-Token": RIOT_API_KEY }
             }
