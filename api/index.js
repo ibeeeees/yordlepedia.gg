@@ -1,5 +1,5 @@
 // Vercel Serverless Function - Express API
-// Updated: Fixed Account API endpoint to use by-riot-id
+// Updated: Fixed Account API endpoint to use by-riot-id with 59-method key
 "use strict";
 
 const path = require("path");
