@@ -89,67 +89,99 @@ app.get("/api/summoner", async (req, res) => {
     }
 
     try {
-        const normalizedRegion = region.toLowerCase();
-        let gameName, tagLine;
+        const summonerName = decodeURIComponent(name);
         
-        if (name.includes("#")) {
-            [gameName, tagLine] = name.split("#");
-        } else {
-            gameName = name;
-            tagLine = ""; 
+        // Check response cache first
+        const cachedResponse = responseCache.get(summonerName);
+        if (cachedResponse) {
+            return res.json(cachedResponse);
         }
 
         if (!RIOT_API_KEY) {
             return res.json({
-                profile: { name: `${gameName}#${tagLine || 'NA1'}`, region, level: 1, profileIconId: 0 },
+                profile: { name: summonerName, region, level: 1, profileIconId: 0 },
                 matches: { RANKED_SOLO: [], RANKED_FLEX: [], ARAM: [] },
                 champions: []
             });
         }
 
+        // Extract game name and tag from format: "name#tag"
+        let gameName, tagLine;
+        if (summonerName.includes("#")) {
+            [gameName, tagLine] = summonerName.split("#");
+        } else {
+            gameName = summonerName;
+            tagLine = ""; // Will fail if tag is required
+        }
+
         // Fetch account by game name and tag
         const accountResponse = await axios.get(
             `https://americas.api.riotgames.com/riot/account/v1/accounts/by-game-name/${encodeURIComponent(gameName)}/by-tag/${encodeURIComponent(tagLine)}`,
-            { headers: { "X-Riot-Token": RIOT_API_KEY } }
+            {
+                headers: { "X-Riot-Token": RIOT_API_KEY }
+            }
         );
 
         const { puuid, gameName: accountGameName, tagLine: accountTagLine } = accountResponse.data;
 
-        // Fetch summoner by PUUID (always from na1 for now)
+        // Fetch summoner by PUUID
         const summonerResponse = await axios.get(
             `https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
-            { headers: { "X-Riot-Token": RIOT_API_KEY } }
+            {
+                headers: { "X-Riot-Token": RIOT_API_KEY }
+            }
         );
 
         let summonerData = summonerResponse.data;
+        
+        // Add name from Account API (Summoner v4 doesn't return name)
         summonerData.name = `${accountGameName}#${accountTagLine}`;
 
         // Fetch ranked stats
         const rankedResponse = await axios.get(
             `https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerData.id}`,
-            { headers: { "X-Riot-Token": RIOT_API_KEY } }
+            {
+                headers: { "X-Riot-Token": RIOT_API_KEY }
+            }
         );
 
         const rankedStats = rankedResponse.data.find(e => e.queueType === "RANKED_SOLO_5x5") || {};
+        
+        // Fetch match history
+        const matchesResponse = await axios.get(
+            `https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=20`,
+            {
+                headers: { "X-Riot-Token": RIOT_API_KEY }
+            }
+        );
 
-        // Build response
-        const response = {
-            profile: {
-                name: summonerData.name,
-                region: normalizedRegion,
-                level: summonerData.summonerLevel,
-                profileIconId: summonerData.profileIconId,
-                rank: rankedStats.tier || "UNRANKED",
-                division: rankedStats.rank || "",
-                lp: rankedStats.leaguePoints || 0,
-                wins: rankedStats.wins || 0,
-                losses: rankedStats.losses || 0
-            },
-            matches: { RANKED_SOLO: [], RANKED_FLEX: [], ARAM: [] },
-            champions: []
-        };
+        const matchIds = matchesResponse.data;
+        const matches = [];
 
-        return res.json(response);
+        // Fetch match details (limit to 4 concurrent requests)
+        const concurrency = 4;
+        for (let i = 0; i < matchIds.length; i += concurrency) {
+            const batch = matchIds.slice(i, i + concurrency);
+            const batchPromises = batch.map(matchId =>
+                axios.get(
+                    `https://americas.api.riotgames.com/lol/match/v5/matches/${matchId}`,
+                    {
+                        headers: { "X-Riot-Token": RIOT_API_KEY }
+                    }
+                )
+            );
+
+            const batchResults = await Promise.all(batchPromises);
+            matches.push(...batchResults.map(r => r.data));
+        }
+
+        // Enrich data with stats, highlights, etc
+        const enrichedData = enrichData(summonerData, rankedStats, matches, puuid);
+
+        // Cache and return
+        responseCache.set(summonerName, enrichedData);
+        return res.json(enrichedData);
+
     } catch (error) {
         console.error("Summoner search error:", error.response?.data || error.message);
         return res.status(404).json({ error: "Summoner not found" });
