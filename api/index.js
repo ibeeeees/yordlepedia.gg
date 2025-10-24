@@ -10,6 +10,8 @@ const cors = require("cors");
 const app = express();
 const RIOT_API_KEY = (process.env.RIOT_API_KEY || "").trim();
 
+console.log(`[Init] API Key loaded: ${RIOT_API_KEY ? RIOT_API_KEY.substring(0, 20) + "..." : "NOT SET"}`);
+
 // Middleware setup
 app.use(express.json());
 app.use(cors());
