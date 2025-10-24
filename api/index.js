@@ -184,8 +184,14 @@ app.get("/api/summoner", async (req, res) => {
         return res.json(enrichedData);
 
     } catch (error) {
-        console.error("Summoner search error:", error.response?.data || error.message);
-        return res.status(404).json({ error: "Summoner not found" });
+        const errorData = error.response?.data || error.message;
+        const errorStatus = error.response?.status || "unknown";
+        console.error(`[Summoner Error] Status: ${errorStatus}, Data:`, errorData);
+        return res.status(404).json({ 
+            error: "Summoner not found",
+            details: typeof errorData === 'string' ? errorData : JSON.stringify(errorData),
+            status: errorStatus
+        });
     }
 });
 
