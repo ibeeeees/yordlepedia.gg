@@ -8,9 +8,25 @@ const axios = require("axios");
 const cors = require("cors");
 
 const app = express();
-const RIOT_API_KEY = (process.env.RIOT_API_KEY || "").trim();
+
+// More robust API key handling for serverless environments
+let RIOT_API_KEY = process.env.RIOT_API_KEY;
+if (RIOT_API_KEY) {
+    RIOT_API_KEY = RIOT_API_KEY.trim().replace(/[\r\n\t]/g, '');
+    // Ensure it starts with RGAPI-
+    if (!RIOT_API_KEY.startsWith('RGAPI-')) {
+        console.error('[Init] Invalid API key format - must start with RGAPI-');
+        RIOT_API_KEY = null;
+    }
+} else {
+    RIOT_API_KEY = null;
+}
 
 console.log(`[Init] API Key loaded: ${RIOT_API_KEY ? RIOT_API_KEY.substring(0, 20) + "..." : "NOT SET"}`);
+console.log(`[Init] API Key length: ${RIOT_API_KEY ? RIOT_API_KEY.length : 0}`);
+console.log(`[Init] Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`[Init] Platform: ${process.platform}`);
+console.log(`[Init] Is Vercel: ${!!process.env.VERCEL}`);
 
 // Middleware setup
 app.use(express.json());
@@ -97,47 +113,91 @@ app.get("/api/health", (req, res) => {
 // Simple test endpoint to verify API key works
 app.get("/api/test", async (req, res) => {
     try {
+        const apiKeyInfo = {
+            hasApiKey: !!RIOT_API_KEY,
+            apiKeyLength: RIOT_API_KEY ? RIOT_API_KEY.length : 0,
+            apiKeyPrefix: RIOT_API_KEY ? RIOT_API_KEY.substring(0, 15) + "..." : "NOT_SET",
+            apiKeyLastChars: RIOT_API_KEY ? "..." + RIOT_API_KEY.slice(-8) : "NOT_SET",
+            startsWithRGAPI: RIOT_API_KEY ? RIOT_API_KEY.startsWith('RGAPI-') : false,
+            expectedLength: 42 // Standard Riot API key length
+        };
+
         if (!RIOT_API_KEY) {
             return res.status(500).json({
                 error: "No API key configured",
-                hasApiKey: false
+                ...apiKeyInfo,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        if (!RIOT_API_KEY.startsWith('RGAPI-')) {
+            return res.status(500).json({
+                error: "API key format invalid - must start with RGAPI-",
+                ...apiKeyInfo,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        if (RIOT_API_KEY.length !== 42) {
+            return res.status(500).json({
+                error: `API key length invalid - expected 42 chars, got ${RIOT_API_KEY.length}`,
+                ...apiKeyInfo,
+                timestamp: new Date().toISOString()
             });
         }
 
         // Test with a simple API call to verify the key works
+        console.log('[Test] Making API call to verify key...');
         const testResponse = await axios.get(
-            "https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/Riot%20API%20Test/NA1",
+            "https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/Riot%20Pls/NA1",
             {
                 headers: { "X-Riot-Token": RIOT_API_KEY },
-                timeout: 5000
+                timeout: 10000
             }
         );
 
         return res.json({
-            status: "API key working",
-            testResponse: "Successfully made API call",
-            hasApiKey: true,
+            status: "API key working - successful API call",
+            testResponse: "Successfully connected to Riot API",
+            ...apiKeyInfo,
             timestamp: new Date().toISOString()
         });
 
     } catch (error) {
         const errorStatus = error.response?.status;
         const errorMessage = error.response?.data || error.message;
+        const errorUrl = error.config?.url;
         
+        console.error('[Test] API call failed:', {
+            status: errorStatus,
+            message: errorMessage,
+            url: errorUrl
+        });
+
         let status = "API key test failed";
+        let isNormalError = false;
+        
         if (errorStatus === 403) {
-            status = "API key is invalid or expired";
+            status = "API key is invalid, expired, or lacks permissions";
         } else if (errorStatus === 429) {
             status = "Rate limit exceeded";
         } else if (errorStatus === 404) {
-            status = "Test API call returned 404 (this might be normal)";
+            status = "Test user not found (API key likely working)";
+            isNormalError = true;
+        } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+            status = "Network error - cannot reach Riot API";
         }
 
         return res.json({
             status,
             error: errorMessage,
             errorStatus,
+            errorCode: error.code,
+            errorUrl,
+            isNormalError,
             hasApiKey: !!RIOT_API_KEY,
+            apiKeyLength: RIOT_API_KEY ? RIOT_API_KEY.length : 0,
+            apiKeyPrefix: RIOT_API_KEY ? RIOT_API_KEY.substring(0, 15) + "..." : "NOT_SET",
             timestamp: new Date().toISOString()
         });
     }
