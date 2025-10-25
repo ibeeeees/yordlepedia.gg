@@ -94,16 +94,79 @@ app.get("/api/health", (req, res) => {
     });
 });
 
+// Simple test endpoint to verify API key works
+app.get("/api/test", async (req, res) => {
+    try {
+        if (!RIOT_API_KEY) {
+            return res.status(500).json({
+                error: "No API key configured",
+                hasApiKey: false
+            });
+        }
+
+        // Test with a simple API call to verify the key works
+        const testResponse = await axios.get(
+            "https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/Riot%20API%20Test/NA1",
+            {
+                headers: { "X-Riot-Token": RIOT_API_KEY },
+                timeout: 5000
+            }
+        );
+
+        return res.json({
+            status: "API key working",
+            testResponse: "Successfully made API call",
+            hasApiKey: true,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        const errorStatus = error.response?.status;
+        const errorMessage = error.response?.data || error.message;
+        
+        let status = "API key test failed";
+        if (errorStatus === 403) {
+            status = "API key is invalid or expired";
+        } else if (errorStatus === 429) {
+            status = "Rate limit exceeded";
+        } else if (errorStatus === 404) {
+            status = "Test API call returned 404 (this might be normal)";
+        }
+
+        return res.json({
+            status,
+            error: errorMessage,
+            errorStatus,
+            hasApiKey: !!RIOT_API_KEY,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
 // Debug endpoint for troubleshooting
 app.get("/api/debug", (req, res) => {
+    const allEnvVars = Object.keys(process.env).filter(key => 
+        key.includes('RIOT') || key.includes('API') || key.includes('NODE')
+    );
+    
     return res.status(200).json({
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || "development",
+        platform: process.platform,
+        nodeVersion: process.version,
         hasRiotApiKey: !!RIOT_API_KEY,
         apiKeyLength: RIOT_API_KEY ? RIOT_API_KEY.length : 0,
         apiKeyPrefix: RIOT_API_KEY ? RIOT_API_KEY.substring(0, 15) + "..." : "NOT_SET",
+        apiKeyLast4: RIOT_API_KEY ? "..." + RIOT_API_KEY.slice(-4) : "NOT_SET",
+        envVarsFound: allEnvVars,
         regions: Object.keys(regionToCluster),
-        clusters: Object.values(regionToCluster).filter((v, i, a) => a.indexOf(v) === i)
+        clusters: Object.values(regionToCluster).filter((v, i, a) => a.indexOf(v) === i),
+        vercelInfo: {
+            isVercel: !!process.env.VERCEL,
+            vercelEnv: process.env.VERCEL_ENV,
+            vercelUrl: process.env.VERCEL_URL,
+            region: process.env.VERCEL_REGION
+        }
     });
 });
 
@@ -216,12 +279,33 @@ app.get("/api/summoner", async (req, res) => {
     } catch (error) {
         const errorData = error.response?.data || error.message;
         const errorStatus = error.response?.status || "unknown";
-        console.error(`[Summoner Error] Region: ${region}, Status: ${errorStatus}, Data:`, errorData);
-        return res.status(404).json({ 
-            error: "Summoner not found",
+        const errorUrl = error.config?.url || "unknown";
+        
+        console.error(`[Summoner Error] Region: ${region}, Name: ${name}`);
+        console.error(`[Summoner Error] Status: ${errorStatus}, URL: ${errorUrl}`);
+        console.error(`[Summoner Error] Data:`, errorData);
+        console.error(`[Summoner Error] Stack:`, error.stack);
+        
+        // Provide more specific error messages
+        let userMessage = "Summoner not found";
+        if (errorStatus === 403) {
+            userMessage = "API key is invalid or expired";
+        } else if (errorStatus === 429) {
+            userMessage = "Rate limit exceeded, please try again later";
+        } else if (errorStatus === 404) {
+            userMessage = `Summoner "${name}" not found in region ${region.toUpperCase()}`;
+        } else if (!RIOT_API_KEY) {
+            userMessage = "API key not configured";
+        }
+        
+        return res.status(errorStatus === 404 ? 404 : 500).json({ 
+            error: userMessage,
             details: typeof errorData === 'string' ? errorData : JSON.stringify(errorData),
             status: errorStatus,
-            region: region
+            region: region,
+            url: errorUrl,
+            hasApiKey: !!RIOT_API_KEY,
+            timestamp: new Date().toISOString()
         });
     }
 });
