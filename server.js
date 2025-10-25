@@ -5,15 +5,39 @@ const path = require("path");
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto-js");
+const request = require("request");
+const session = require("express-session");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const RIOT_API_KEY = process.env.RIOT_API_KEY || "";
 
+// RSO Configuration
+const RSO_CLIENT_ID = process.env.RSO_CLIENT_ID || "";
+const RSO_CLIENT_SECRET = process.env.RSO_CLIENT_SECRET || "";
+const RSO_REDIRECT_URI = process.env.RSO_REDIRECT_URI || "http://localhost:3000/oauth2-callback";
+const RSO_BASE_URL = process.env.RSO_BASE_URL || "https://auth.riotgames.com";
+const SESSION_SECRET = process.env.SESSION_SECRET || "fallback-session-secret-please-change";
+
 // Middleware setup
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 app.use(cors());
+
+// Session configuration for RSO
+app.use(session({
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.AWS_LAMBDA_FUNCTION_NAME ? true : false, // Secure in Lambda/production
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: 'lax' // Better CSRF protection
+    }
+}));
 
 // Cache utilities
 function createTimedCache(ttlMs) {
@@ -74,6 +98,211 @@ const queueMap = {
     450: { key: "ARAM", label: "ARAM" }
 };
 
+// RSO Authentication Routes
+// Riot Sign On - Redirect user to authentication
+app.get("/auth/riot", (req, res) => {
+    const state = crypto.lib.WordArray.random(128/8).toString(crypto.enc.Hex);
+    req.session.oauthState = state;
+    
+    const authUrl = RSO_BASE_URL + "/authorize" +
+        "?redirect_uri=" + encodeURIComponent(RSO_REDIRECT_URI) +
+        "&client_id=" + RSO_CLIENT_ID +
+        "&response_type=code" +
+        "&scope=openid cpid offline_access" +
+        "&state=" + state;
+    
+    res.redirect(authUrl);
+});
+
+// OAuth2 callback - Exchange authorization code for tokens
+app.get("/oauth2-callback", (req, res) => {
+    const { code, state } = req.query;
+    
+    // Validate state parameter to prevent CSRF attacks
+    if (!state || state !== req.session.oauthState) {
+        return res.status(400).json({ error: "Invalid state parameter" });
+    }
+    
+    if (!code) {
+        return res.status(400).json({ error: "Authorization code not provided" });
+    }
+    
+    // Clear the state from session
+    delete req.session.oauthState;
+    
+    // Exchange authorization code for tokens
+    const tokenUrl = RSO_BASE_URL + "/token";
+    const authHeader = "Basic " + Buffer.from(RSO_CLIENT_ID + ":" + RSO_CLIENT_SECRET).toString("base64");
+    
+    request.post({
+        url: tokenUrl,
+        headers: {
+            "Authorization": authHeader,
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        form: {
+            grant_type: "authorization_code",
+            code: code,
+            redirect_uri: RSO_REDIRECT_URI
+        }
+    }, (error, response, body) => {
+        if (error || response.statusCode !== 200) {
+            console.error("Token exchange error:", error || body);
+            return res.status(500).json({ error: "Failed to exchange authorization code for tokens" });
+        }
+        
+        try {
+            const tokens = JSON.parse(body);
+            
+            // Store tokens in session
+            req.session.tokens = {
+                access_token: tokens.access_token,
+                id_token: tokens.id_token,
+                refresh_token: tokens.refresh_token,
+                expires_at: Date.now() + (tokens.expires_in * 1000)
+            };
+            
+            // Decode ID token to get user info (ID tokens are not encrypted)
+            try {
+                const idTokenPayload = jwt.decode(tokens.id_token);
+                req.session.user = {
+                    sub: idTokenPayload.sub,
+                    cpid: idTokenPayload.cpid || "Unknown",
+                    authenticated: true
+                };
+            } catch (jwtError) {
+                console.warn("Could not decode ID token:", jwtError.message);
+                req.session.user = {
+                    authenticated: true,
+                    sub: "unknown"
+                };
+            }
+            
+            // Redirect to main page with success
+            res.redirect("/?auth=success");
+            
+        } catch (parseError) {
+            console.error("Token parsing error:", parseError);
+            res.status(500).json({ error: "Failed to parse token response" });
+        }
+    });
+});
+
+// Get user info from RSO userinfo endpoint
+app.get("/auth/userinfo", async (req, res) => {
+    if (!req.session.tokens || !req.session.tokens.access_token) {
+        return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    // Check if token is expired
+    if (Date.now() > req.session.tokens.expires_at) {
+        return res.status(401).json({ error: "Token expired" });
+    }
+    
+    try {
+        const userInfoUrl = RSO_BASE_URL + "/userinfo";
+        const response = await axios.get(userInfoUrl, {
+            headers: {
+                "Authorization": `Bearer ${req.session.tokens.access_token}`
+            }
+        });
+        
+        // Update session with fresh user data
+        req.session.user = {
+            ...req.session.user,
+            ...response.data,
+            authenticated: true
+        };
+        
+        res.json({
+            user: req.session.user,
+            region: response.data.cpid || "Unknown"
+        });
+        
+    } catch (error) {
+        console.error("UserInfo error:", error.message);
+        if (error.response?.status === 401) {
+            // Token might be invalid, clear session
+            delete req.session.tokens;
+            delete req.session.user;
+            return res.status(401).json({ error: "Invalid or expired token" });
+        }
+        res.status(500).json({ error: "Failed to fetch user information" });
+    }
+});
+
+// Refresh access token using refresh token
+app.post("/auth/refresh", (req, res) => {
+    if (!req.session.tokens || !req.session.tokens.refresh_token) {
+        return res.status(401).json({ error: "No refresh token available" });
+    }
+    
+    const tokenUrl = RSO_BASE_URL + "/token";
+    const authHeader = "Basic " + Buffer.from(RSO_CLIENT_ID + ":" + RSO_CLIENT_SECRET).toString("base64");
+    
+    request.post({
+        url: tokenUrl,
+        headers: {
+            "Authorization": authHeader,
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        form: {
+            grant_type: "refresh_token",
+            refresh_token: req.session.tokens.refresh_token
+        }
+    }, (error, response, body) => {
+        if (error || response.statusCode !== 200) {
+            console.error("Token refresh error:", error || body);
+            // Clear invalid tokens
+            delete req.session.tokens;
+            delete req.session.user;
+            return res.status(401).json({ error: "Failed to refresh token" });
+        }
+        
+        try {
+            const tokens = JSON.parse(body);
+            
+            // Update tokens in session
+            req.session.tokens = {
+                access_token: tokens.access_token,
+                id_token: req.session.tokens.id_token, // Keep existing ID token
+                refresh_token: tokens.refresh_token || req.session.tokens.refresh_token, // Use new or keep existing
+                expires_at: Date.now() + (tokens.expires_in * 1000)
+            };
+            
+            res.json({ success: true, expires_in: tokens.expires_in });
+            
+        } catch (parseError) {
+            console.error("Token refresh parsing error:", parseError);
+            res.status(500).json({ error: "Failed to parse refresh token response" });
+        }
+    });
+});
+
+// Logout endpoint
+app.post("/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error("Session destruction error:", err);
+            return res.status(500).json({ error: "Failed to logout" });
+        }
+        res.json({ success: true });
+    });
+});
+
+// Check authentication status
+app.get("/auth/status", (req, res) => {
+    if (req.session.user && req.session.user.authenticated) {
+        res.json({
+            authenticated: true,
+            user: req.session.user,
+            tokenExpired: req.session.tokens ? Date.now() > req.session.tokens.expires_at : true
+        });
+    } else {
+        res.json({ authenticated: false });
+    }
+});
+
 // Video upload endpoint (stub - implement with cloud storage)
 app.post("/api/upload/highlight", (req, res) => {
     return res.status(501).json({
@@ -82,8 +311,27 @@ app.post("/api/upload/highlight", (req, res) => {
     });
 });
 
-// Authentication endpoints (currently disabled - implement with auth service of choice)
-// Supported options: Auth0, Firebase, Cognito, or custom JWT implementation
+// Authentication middleware
+function requireAuth(req, res, next) {
+    if (!req.session.user || !req.session.user.authenticated) {
+        return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Check if token is expired
+    if (req.session.tokens && Date.now() > req.session.tokens.expires_at) {
+        return res.status(401).json({ error: "Token expired, please refresh" });
+    }
+    
+    next();
+}
+
+// Optional authentication middleware (continues even if not authenticated)
+function optionalAuth(req, res, next) {
+    req.isAuthenticated = req.session.user && req.session.user.authenticated && 
+                          req.session.tokens && Date.now() <= req.session.tokens.expires_at;
+    req.user = req.isAuthenticated ? req.session.user : null;
+    next();
+}
 
 const fallbackPayload = {
   meta: {
@@ -375,6 +623,67 @@ app.post("/api/summoner/banner", async (req, res) => {
 });
 
 // Match history endpoint
+// Match detail endpoint - Get detailed match information with all players
+app.get("/api/match/:matchId", async (req, res) => {
+    const { matchId } = req.params;
+    const { region } = req.query;
+
+    if (!region || !matchId) {
+        return res.status(400).json({ error: "Query parameter 'region' and path parameter 'matchId' are required." });
+    }
+
+    const normalizedRegion = region.toLowerCase();
+    const cluster = regionToCluster[normalizedRegion];
+    if (!cluster) {
+        return res.status(400).json({ error: `Unsupported region "${region}".` });
+    }
+
+    if (!RIOT_API_KEY) {
+        return res.status(503).json({ 
+            error: "Riot API key not configured", 
+            matchId,
+            region: normalizedRegion 
+        });
+    }
+
+    // Check cache first
+    const cacheKey = `match-detail:${matchId}`;
+    const cached = matchDetailCache.get(cacheKey);
+    if (cached) {
+        return res.json({
+            meta: { source: "cache" },
+            match: formatMatchDetails(cached),
+            matchId
+        });
+    }
+
+    try {
+        const matchUrl = `https://${cluster}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
+        const response = await axios.get(matchUrl, {
+            headers: { "X-Riot-Token": RIOT_API_KEY }
+        });
+
+        const matchData = response.data;
+        matchDetailCache.set(cacheKey, matchData);
+
+        res.json({
+            meta: { source: "riot", retrievedAt: new Date().toISOString() },
+            match: formatMatchDetails(matchData),
+            matchId
+        });
+    } catch (error) {
+        console.error(`Match detail error for ${matchId}:`, error.message);
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+            return res.status(404).json({ error: `Match ${matchId} not found.` });
+        }
+        res.status(503).json({
+            error: "Unable to fetch match details",
+            matchId,
+            details: error.message
+        });
+    }
+});
+
 // Ranked info endpoint
 app.get("/api/ranked", async (req, res) => {
     const { region, id } = req.query;
@@ -1030,6 +1339,7 @@ function enrichData(profile, rankedStats, rawMatches, region) {
     champRef.assists += assists;
 
     matchesByQueue[queue.key].push({
+      matchId: match.metadata.matchId,
       champion: participant.championName,
       role: roleLabel,
       kda: `${kills} / ${deaths} / ${assists}`,
@@ -1048,7 +1358,7 @@ function enrichData(profile, rankedStats, rawMatches, region) {
     .map(([role]) => role);
 
   const championSummaries = [...aggregation.champions.values()]
-    .filter(champ => champ.games >= 2) // Only show champions with at least 2 games for meaningful winrate
+    .filter(champ => champ.games >= 1) // Show champions with at least 1 game
     .map(champ => {
       const avgKills = champ.kills / champ.games || 0;
       const avgDeaths = champ.deaths / champ.games || 0;
@@ -1063,6 +1373,7 @@ function enrichData(profile, rankedStats, rawMatches, region) {
         games: champ.games
       };
     })
+    .filter(champ => champ.winRateValue >= 50) // Only show champions with 50%+ winrate
     .sort((a, b) => {
       // Sort by winrate first, then by games played as tiebreaker
       if (b.winRateValue !== a.winRateValue) {
@@ -1265,4 +1576,137 @@ function titleCase(value = "") {
 
 function structuredClone(obj) {
   return JSON.parse(JSON.stringify(obj));
+}
+
+function formatMatchDetails(matchData) {
+  const { info } = matchData;
+  const durationMinutes = Math.round(info.gameDuration / 60);
+  const gameMode = queueMap[info.queueId]?.label || "Unknown";
+  
+  // Process teams
+  const teams = info.teams.map(team => {
+    const teamParticipants = info.participants.filter(p => p.teamId === team.teamId);
+    const totalKills = teamParticipants.reduce((sum, p) => sum + p.kills, 0);
+    const totalGold = teamParticipants.reduce((sum, p) => sum + (p.goldEarned || 0), 0);
+    const totalDamage = teamParticipants.reduce((sum, p) => sum + (p.totalDamageDealtToChampions || 0), 0);
+    
+    return {
+      teamId: team.teamId,
+      win: team.win,
+      side: team.teamId === 100 ? "Blue" : "Red",
+      kills: totalKills,
+      deaths: teamParticipants.reduce((sum, p) => sum + p.deaths, 0),
+      assists: teamParticipants.reduce((sum, p) => sum + p.assists, 0),
+      totalGold,
+      totalDamage,
+      objectives: {
+        baron: team.objectives?.baron?.kills || 0,
+        dragon: team.objectives?.dragon?.kills || 0,
+        tower: team.objectives?.tower?.kills || 0,
+        inhibitor: team.objectives?.inhibitor?.kills || 0,
+        riftHerald: team.objectives?.riftHerald?.kills || 0
+      },
+      bans: team.bans?.map(ban => ban.championId) || []
+    };
+  });
+
+  // Process participants with enhanced stats
+  const players = info.participants.map(participant => {
+    const team = teams.find(t => t.teamId === participant.teamId);
+    const teamKills = team?.kills || 1;
+    const teamDamage = team?.totalDamage || 1;
+    
+    return {
+      // Basic info
+      summonerName: participant.riotIdGameName || participant.summonerName || "Unknown",
+      tagLine: participant.riotIdTagline || "",
+      puuid: participant.puuid,
+      teamId: participant.teamId,
+      teamSide: participant.teamId === 100 ? "Blue" : "Red",
+      championId: participant.championId,
+      championName: participant.championName,
+      championLevel: participant.champLevel,
+      
+      // Position and role
+      teamPosition: resolveRole(participant.teamPosition, participant.role),
+      role: participant.role,
+      
+      // Combat stats
+      kills: participant.kills,
+      deaths: participant.deaths,
+      assists: participant.assists,
+      kda: participant.deaths === 0 ? 
+        (participant.kills + participant.assists) : 
+        Number(((participant.kills + participant.assists) / participant.deaths).toFixed(2)),
+      killParticipation: Math.round(((participant.kills + participant.assists) / teamKills) * 100),
+      
+      // Farm and economy
+      cs: (participant.totalMinionsKilled || 0) + (participant.neutralMinionsKilled || 0),
+      csPerMinute: Number(((participant.totalMinionsKilled + participant.neutralMinionsKilled) / (info.gameDuration / 60)).toFixed(1)),
+      goldEarned: participant.goldEarned || 0,
+      goldPerMinute: Number(((participant.goldEarned || 0) / (info.gameDuration / 60)).toFixed(0)),
+      
+      // Damage stats
+      totalDamageDealt: participant.totalDamageDealtToChampions || 0,
+      damagePerMinute: Number(((participant.totalDamageDealtToChampions || 0) / (info.gameDuration / 60)).toFixed(0)),
+      damageShare: Math.round(((participant.totalDamageDealtToChampions || 0) / teamDamage) * 100),
+      totalDamageTaken: participant.totalDamageTaken || 0,
+      
+      // Vision and utility
+      visionScore: participant.visionScore || 0,
+      wardsPlaced: participant.wardsPlaced || 0,
+      wardsKilled: participant.wardsKilled || 0,
+      controlWardsPlaced: participant.visionWardsBoughtInGame || 0,
+      
+      // Items (final build)
+      items: [
+        participant.item0,
+        participant.item1,
+        participant.item2,
+        participant.item3,
+        participant.item4,
+        participant.item5,
+        participant.item6 // Trinket
+      ].filter(item => item && item !== 0),
+      
+      // Summoner spells
+      summonerSpells: [
+        participant.summoner1Id,
+        participant.summoner2Id
+      ],
+      
+      // Special achievements
+      largestKillingSpree: participant.largestKillingSpree || 0,
+      largestMultiKill: participant.largestMultiKill || 0,
+      doubleKills: participant.doubleKills || 0,
+      tripleKills: participant.tripleKills || 0,
+      quadraKills: participant.quadraKills || 0,
+      pentaKills: participant.pentaKills || 0,
+      firstBloodKill: participant.firstBloodKill || false,
+      firstTowerKill: participant.firstTowerKill || false,
+      
+      // Performance indicators
+      win: participant.win,
+      gameEndedInEarlySurrender: participant.gameEndedInEarlySurrender || false,
+      gameEndedInSurrender: participant.gameEndedInSurrender || false
+    };
+  });
+
+  return {
+    gameId: matchData.metadata.matchId,
+    gameCreation: info.gameCreation,
+    gameStartTimestamp: info.gameStartTimestamp,
+    gameEndTimestamp: info.gameEndTimestamp,
+    gameDuration: info.gameDuration,
+    durationMinutes,
+    gameMode,
+    queueId: info.queueId,
+    mapId: info.mapId,
+    gameVersion: info.gameVersion,
+    teams,
+    players,
+    // Quick access arrays
+    blueTeam: players.filter(p => p.teamId === 100),
+    redTeam: players.filter(p => p.teamId === 200)
+  };
 }

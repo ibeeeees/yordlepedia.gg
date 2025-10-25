@@ -8,6 +8,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
         :root {
             --bg-dark: #1B2D3A;  /* Atlantic Depths */
             --bg-darker: #15232d;  /* Darker Atlantic Depths */
@@ -181,6 +185,633 @@
             box-shadow: 0 15px 35px rgba(255, 210, 0, 0.4);
         }
 
+        /* Authentication UI Styles */
+        .auth-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .auth-user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-card-light);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .auth-user-info .user-region {
+            font-size: 12px;
+            color: var(--text-soft);
+            background: var(--accent-soft);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .auth-btn {
+            padding: 8px 16px;
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            color: var(--bg-dark);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .auth-btn:hover {
+            background: var(--accent-strong);
+            transform: translateY(-1px);
+        }
+
+        .auth-btn.logout {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .auth-btn.logout:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .auth-status {
+            padding: 4px 8px;
+            background: var(--accent-soft);
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .auth-status.authenticated {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .auth-status.expired {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        /* Match Details Modal Styles */
+        .match-details-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 20px;
+        }
+
+        .match-details-modal.active {
+            display: flex;
+        }
+
+        .match-details-content {
+            background: var(--bg-card);
+            border-radius: 16px;
+            max-width: 1200px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            border: 1px solid var(--border-strong);
+        }
+
+        .match-details-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, var(--bg-darker), var(--bg-card-dark));
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .match-details-header h2 {
+            color: var(--accent);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .match-details-header .close-btn {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .match-details-header .close-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .match-overview {
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 24px;
+            align-items: center;
+            background: var(--bg-card-light);
+            margin: 0;
+        }
+
+        .team-score-section {
+            text-align: center;
+        }
+
+        .team-score {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+
+        .score-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .match-info {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .match-info .duration {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .match-info .game-mode {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .teams-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        }
+
+        .team-section {
+            padding: 24px;
+        }
+
+        .team-section.blue-team {
+            border-right: 1px solid var(--border);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), transparent);
+        }
+
+        .team-section.red-team {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), transparent);
+        }
+
+        .team-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .team-name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .team-name.blue {
+            color: #3b82f6;
+        }
+
+        .team-name.red {
+            color: #ef4444;
+        }
+
+        .team-kda {
+            font-size: 16px;
+            color: var(--text-muted);
+        }
+
+        .players-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .player-row {
+            display: grid;
+            grid-template-columns: 40px 1fr auto auto auto auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px;
+            background: var(--bg-card-light);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .player-row:hover {
+            background: var(--bg-card);
+            border-color: var(--accent-soft);
+        }
+
+        .clickable-player {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .clickable-player::after {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(45deg, transparent, var(--accent-soft), transparent);
+            border-radius: 9px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .clickable-player:hover {
+            background: var(--bg-card);
+            border-color: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .clickable-player:hover::after {
+            opacity: 0.3;
+        }
+
+        .clickable-player:hover .click-indicator {
+            opacity: 1;
+            animation: bounceIn 0.3s ease;
+        }
+
+        .click-indicator {
+            position: absolute;
+            top: -8px;
+            right: 8px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 10;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Notification System */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            min-width: 300px;
+            max-width: 500px;
+            z-index: 10000;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .notification.hide {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        .notification.info {
+            border-left: 4px solid var(--accent);
+        }
+
+        .notification.success {
+            border-left: 4px solid #4ade80;
+        }
+
+        .notification.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .notification-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notification-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .notification-message {
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .click-indicator::before {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid var(--accent);
+        }
+
+        .player-champion {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background-size: cover;
+            background-position: center;
+            border: 2px solid var(--border);
+        }
+
+        .player-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .player-name {
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        .player-role {
+            font-size: 12px;
+            color: var(--text-soft);
+        }
+
+        .player-kda {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-main);
+            text-align: center;
+        }
+
+        .player-cs {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .player-damage {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .player-items {
+            display: flex;
+            gap: 2px;
+        }
+
+        .item-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background-size: cover;
+            background-position: center;
+            border: 1px solid var(--border);
+        }
+
+        .item-icon.empty {
+            background: var(--bg-darker);
+        }
+
+        .objectives-section {
+            padding: 24px;
+            background: var(--bg-card-dark);
+            border-top: 1px solid var(--border);
+        }
+
+        .objectives-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .objectives-team {
+            display: flex;
+            justify-content: space-around;
+            padding: 16px;
+            background: var(--bg-card-light);
+            border-radius: 8px;
+        }
+
+        .objective-item {
+            text-align: center;
+        }
+
+        .objective-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .objective-count {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .objective-name {
+            font-size: 11px;
+            color: var(--text-soft);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Stat Explanations Styles */
+        .stat-explanations {
+            margin-top: 40px;
+            padding: 32px;
+            background: var(--bg-card-dark);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-explanations h3 {
+            color: var(--accent);
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .explanations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .explanation-card {
+            background: var(--bg-card-light);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .explanation-card:hover {
+            background: var(--bg-card);
+            border-color: var(--accent-soft);
+            transform: translateY(-2px);
+        }
+
+        .explanation-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .explanation-header h4 {
+            color: var(--text-main);
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .stat-icon-small {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .explanation-card p {
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .explanation-card ul {
+            margin: 0;
+            padding-left: 20px;
+            color: var(--text-main);
+        }
+
+        .explanation-card li {
+            margin-bottom: 6px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .explanation-card li strong {
+            color: var(--accent);
+        }
+
+        .formula {
+            margin-top: 16px;
+            padding: 12px;
+            background: var(--accent-soft);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+            text-align: center;
+            border-left: 3px solid var(--accent);
+        }
+
+        @media (max-width: 768px) {
+            .stat-explanations {
+                margin-top: 20px;
+                padding: 20px;
+            }
+
+            .explanations-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .explanation-card {
+                padding: 16px;
+            }
+
+            .stat-explanations h3 {
+                font-size: 20px;
+                margin-bottom: 16px;
+            }
+
+            .match-details-content {
+                margin: 10px;
+                max-height: 95vh;
+            }
+
+            .teams-container {
+                grid-template-columns: 1fr;
+            }
+
+            .team-section.blue-team {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .player-row {
+                grid-template-columns: 32px 1fr auto auto;
+                font-size: 12px;
+            }
+
+            .player-champion {
+                width: 32px;
+                height: 32px;
+            }
+
+            .player-damage {
+                display: none;
+            }
+        }
+
         main {
             max-width: 1250px;
             margin: 0 auto;
@@ -305,6 +936,9 @@
 
         .name-input {
             flex: 2;
+            min-width: 0;
+            max-width: none;
+            width: 100%;
             border: none;
             background: transparent;
             color: var(--text-main);
@@ -312,13 +946,15 @@
             font-family: inherit;
             font-size: 1rem;
             outline: none;
-            width: 0; /* Prevent flex overflow */
-            min-width: 0; /* Allow shrinking */
+            overflow: visible;
+            text-overflow: clip;
         }
 
         .tagline-input {
             flex: 1;
+            min-width: 0;
             max-width: 140px;
+            width: 100%;
             border: none;
             border-left: 1px solid rgba(255, 255, 255, 0.12);
             background: transparent;
@@ -327,8 +963,8 @@
             font-family: inherit;
             font-size: 1rem;
             outline: none;
-            width: 0; /* Prevent flex overflow */
-            min-width: 0; /* Allow shrinking */
+            overflow: visible;
+            text-overflow: clip;
         }
 
         .name-input::placeholder,
@@ -1157,6 +1793,40 @@
             content: '▼';
         }
 
+        .stat-calculation {
+            text-align: center;
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .calc-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 6px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .calc-formula {
+            font-size: 0.75rem;
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .calc-details {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.5;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
         .stat-box > div {
             position: relative;
             z-index: 2;
@@ -1259,6 +1929,13 @@
             border-radius: 18px;
             padding: 18px 22px;
             transition: transform 0.2s;
+        }
+
+        .match-card[style*="cursor: pointer"]:hover {
+            background: rgba(8, 15, 25, 0.95);
+            border-color: var(--accent-soft);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(242, 204, 143, 0.15);
         }
 
         .match-card:hover {
@@ -1435,11 +2112,14 @@
         }
 
         .leaderboard tbody tr {
-            transition: background-color 0.2s;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
         .leaderboard tbody tr:hover {
             background: var(--accent-soft);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .leaderboard-region-select {
@@ -1889,7 +2569,19 @@
                 <a href="#community">Community</a>
                 <a href="#coming-soon">Coming Soon</a>
             </div>
-            <button class="profile-btn" onclick="handleLogin()">My Profile</button>
+            <div class="auth-container" id="authContainer">
+                <div class="auth-status" id="authStatus">Not authenticated</div>
+                <div class="auth-user-info" id="authUserInfo" style="display: none;">
+                    <span id="authUsername">Username</span>
+                    <span class="user-region" id="authRegion">Region</span>
+                </div>
+                <a href="/auth/riot" class="auth-btn" id="authSignIn">
+                    <span>🎮</span> Sign In with Riot
+                </a>
+                <button class="auth-btn logout" id="authSignOut" style="display: none;" onclick="handleLogout()">
+                    <span>🚪</span> Sign Out
+                </button>
+            </div>
         </nav>
     </header>
 
@@ -1929,12 +2621,12 @@
                         <option value="vn2">VN</option>
                     </select>
                     <div class="name-tagline-wrapper">
-                        <input id="summonerName" class="search-input name-input" type="search" placeholder="Summoner name">
-                        <input id="summonerTagline" class="search-input tagline-input" type="search" placeholder="Tag (e.g. NA1)">
+                        <input id="summonerName" class="search-input name-input" type="search" placeholder="Enter summoner name (e.g. Faker)">
+                        <input id="summonerTagline" class="search-input tagline-input" type="search" placeholder="(E.G. #000)">
                     </div>
                     <button class="search-btn" onclick="handleSearch()">Search</button>
                 </div>
-                <p class="search-footer">Example: Try “Faker”, “Tyler1” or “ShowMaker” to preview the profile experience.</p>
+                <p class="search-footer">Example: Enter summoner name and tagline to search any player profile.</p>
             </article>
         </section>
 
@@ -2072,6 +2764,15 @@
                                 <span style="color: var(--text-soft)">• 6 First Bloods</span>
                             </div>
                         </div>
+                        <div class="stat-calculation">
+                            <div class="calc-title">📊 Calculation:</div>
+                            <div class="calc-formula">Win Rate (40%) + KDA Ratio (35%) + Consistency (25%)</div>
+                            <div class="calc-details">
+                                • <strong>Win Rate:</strong> Your ranked win percentage<br>
+                                • <strong>KDA Ratio:</strong> (Kills + Assists) ÷ Deaths<br>
+                                • <strong>Consistency:</strong> Perfect KDA games & kill participation
+                            </div>
+                        </div>
                     </div>
 
                     <div class="stat-box combat-mastery">
@@ -2097,6 +2798,15 @@
                             <div class="rank-change">
                                 <span>Elite Fighter</span>
                                 <span style="color: var(--text-soft)">• 1 Pentakill</span>
+                            </div>
+                        </div>
+                        <div class="stat-calculation">
+                            <div class="calc-title">⚔️ Calculation:</div>
+                            <div class="calc-formula">KDA Ratio + Multikill Bonus + Combat Achievements</div>
+                            <div class="calc-details">
+                                • <strong>KDA Ratio:</strong> (Kills + Assists) ÷ Deaths<br>
+                                • <strong>Multikills:</strong> Double, Triple, Quadra, Pentakills<br>
+                                • <strong>Combat Skills:</strong> First bloods & solo kills
                             </div>
                         </div>
                     </div>
@@ -2125,6 +2835,15 @@
                                 <span style="color: var(--text-soft)">• 28min avg game</span>
                             </div>
                         </div>
+                        <div class="stat-calculation">
+                            <div class="calc-title">💰 Calculation:</div>
+                            <div class="calc-formula">CS Efficiency + Gold Generation + Farm Advantage</div>
+                            <div class="calc-details">
+                                • <strong>CS per Minute:</strong> Minions + jungle monsters farmed<br>
+                                • <strong>Gold per Game:</strong> Total gold earned average<br>
+                                • <strong>Farm Lead:</strong> CS advantage over role average
+                            </div>
+                        </div>
                     </div>
 
                     <div class="stat-box impact-rating">
@@ -2149,6 +2868,15 @@
                             <div class="rank-change">
                                 <span>High Impact</span>
                                 <span style="color: var(--text-soft)">• Damage Share</span>
+                            </div>
+                        </div>
+                        <div class="stat-calculation">
+                            <div class="calc-title">🤝 Calculation:</div>
+                            <div class="calc-formula">Damage Share (40%) + Kill Participation (35%) + Vision Score (25%)</div>
+                            <div class="calc-details">
+                                • <strong>Damage Share:</strong> % of team's total damage to champions<br>
+                                • <strong>Kill Participation:</strong> (Kills + Assists) / Team Kills<br>
+                                • <strong>Vision Score:</strong> Wards placed, cleared, and objective control
                             </div>
                         </div>
                     </div>
@@ -2284,12 +3012,6 @@
 
                 <article class="coming-card">
                     <span class="soon-badge">Soon</span>
-                    <h3>Full Match History</h3>
-                    <p>Deep filters, timelines, and advanced breakdowns for every game. <a href="#matches">Preview basics</a>.</p>
-                </article>
-
-                <article class="coming-card">
-                    <span class="soon-badge">Soon</span>
                     <h3>Integrated Chatbox</h3>
                     <p>Stay connected with teammates and friends directly on your profile and match pages.</p>
                 </article>
@@ -2369,6 +3091,428 @@
     </div>
 
     <script>
+        // Authentication Management
+        let authState = {
+            authenticated: false,
+            user: null,
+            tokenExpired: false
+        };
+
+        // Check authentication status on page load
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/auth/status');
+                const data = await response.json();
+                authState = data;
+                updateAuthUI();
+                
+                // Handle URL params for auth success/error
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('auth') === 'success') {
+                    showNotification('Successfully signed in with Riot!', 'success');
+                    // Clean up URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+                updateAuthUI();
+            }
+        }
+
+        // Update authentication UI based on current state
+        function updateAuthUI() {
+            const authStatus = document.getElementById('authStatus');
+            const authUserInfo = document.getElementById('authUserInfo');
+            const authSignIn = document.getElementById('authSignIn');
+            const authSignOut = document.getElementById('authSignOut');
+            const authUsername = document.getElementById('authUsername');
+            const authRegion = document.getElementById('authRegion');
+
+            if (authState.authenticated && authState.user) {
+                // User is authenticated
+                authStatus.textContent = authState.tokenExpired ? 'Token expired' : 'Authenticated';
+                authStatus.className = `auth-status ${authState.tokenExpired ? 'expired' : 'authenticated'}`;
+                
+                authUserInfo.style.display = 'flex';
+                authSignIn.style.display = 'none';
+                authSignOut.style.display = 'inline-flex';
+                
+                authUsername.textContent = authState.user.sub || 'Unknown User';
+                authRegion.textContent = authState.user.cpid || 'Unknown';
+                
+                if (authState.tokenExpired) {
+                    authSignOut.innerHTML = '<span>🔄</span> Refresh Token';
+                    authSignOut.onclick = handleTokenRefresh;
+                } else {
+                    authSignOut.innerHTML = '<span>🚪</span> Sign Out';
+                    authSignOut.onclick = handleLogout;
+                }
+            } else {
+                // User is not authenticated
+                authStatus.textContent = 'Not authenticated';
+                authStatus.className = 'auth-status';
+                
+                authUserInfo.style.display = 'none';
+                authSignIn.style.display = 'inline-flex';
+                authSignOut.style.display = 'none';
+            }
+        }
+
+        // Handle user logout
+        async function handleLogout() {
+            try {
+                const response = await fetch('/auth/logout', { method: 'POST' });
+                if (response.ok) {
+                    authState = { authenticated: false, user: null, tokenExpired: false };
+                    updateAuthUI();
+                    showNotification('Successfully signed out', 'info');
+                } else {
+                    showNotification('Error signing out', 'error');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                showNotification('Error signing out', 'error');
+            }
+        }
+
+        // Handle token refresh
+        async function handleTokenRefresh() {
+            try {
+                const response = await fetch('/auth/refresh', { method: 'POST' });
+                if (response.ok) {
+                    await checkAuthStatus();
+                    showNotification('Token refreshed successfully', 'success');
+                } else {
+                    showNotification('Failed to refresh token. Please sign in again.', 'error');
+                    // Clear auth state and redirect to sign in
+                    authState = { authenticated: false, user: null, tokenExpired: false };
+                    updateAuthUI();
+                }
+            } catch (error) {
+                console.error('Token refresh error:', error);
+                showNotification('Failed to refresh token', 'error');
+            }
+        }
+
+        // Fetch user info from RSO userinfo endpoint
+        async function fetchUserInfo() {
+            if (!authState.authenticated) return null;
+            
+            try {
+                const response = await fetch('/auth/userinfo');
+                if (response.ok) {
+                    const data = await response.json();
+                    authState.user = data.user;
+                    updateAuthUI();
+                    return data;
+                } else if (response.status === 401) {
+                    // Token expired, update state
+                    authState.tokenExpired = true;
+                    updateAuthUI();
+                }
+            } catch (error) {
+                console.error('Error fetching user info:', error);
+            }
+            return null;
+        }
+
+        // Show notification (you can customize this)
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                max-width: 300px;
+                transition: all 0.3s ease;
+            `;
+            
+            // Set colors based on type
+            switch (type) {
+                case 'success':
+                    notification.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+                    break;
+                case 'error':
+                    notification.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                    break;
+                case 'info':
+                default:
+                    notification.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
+                    break;
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Remove after 4 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
+
+        // Initialize authentication on page load
+        document.addEventListener('DOMContentLoaded', checkAuthStatus);
+
+        // Match Details Functions
+        async function openMatchDetails(matchId, region) {
+            const modal = document.getElementById('matchDetailsModal');
+            modal.classList.add('active');
+            
+            // Show loading state
+            document.getElementById('gameMode').textContent = 'Loading match details...';
+            document.getElementById('matchDuration').textContent = '--:--';
+            document.getElementById('blueTeamScore').textContent = '0';
+            document.getElementById('redTeamScore').textContent = '0';
+            
+            try {
+                const response = await fetch(`/api/match/${matchId}?region=${region}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch match details: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                populateMatchDetails(data.match);
+            } catch (error) {
+                console.error('Error fetching match details:', error);
+                showNotification('Failed to load match details', 'error');
+                document.getElementById('gameMode').textContent = 'Error loading match details';
+            }
+        }
+
+        function populateMatchDetails(match) {
+            // Update match overview
+            document.getElementById('matchDuration').textContent = `${match.durationMinutes}m`;
+            document.getElementById('gameMode').textContent = match.gameMode;
+            
+            // Update team scores
+            const blueTeam = match.teams.find(t => t.teamId === 100);
+            const redTeam = match.teams.find(t => t.teamId === 200);
+            
+            document.getElementById('blueTeamScore').textContent = blueTeam.kills;
+            document.getElementById('redTeamScore').textContent = redTeam.kills;
+            document.getElementById('blueTeamKDA').textContent = `${blueTeam.kills}/${blueTeam.deaths}/${blueTeam.assists}`;
+            document.getElementById('redTeamKDA').textContent = `${redTeam.kills}/${redTeam.deaths}/${redTeam.assists}`;
+            
+            // Populate team players
+            populateTeamPlayers('blueTeamPlayers', match.blueTeam);
+            populateTeamPlayers('redTeamPlayers', match.redTeam);
+            
+            // Populate objectives
+            populateObjectives('blueObjectives', blueTeam.objectives);
+            populateObjectives('redObjectives', redTeam.objectives);
+        }
+
+        function populateTeamPlayers(containerId, players) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            players.forEach(player => {
+                const playerRow = document.createElement('div');
+                playerRow.className = 'player-row clickable-player';
+                
+                // Build items HTML
+                const itemsHTML = Array.from({length: 6}, (_, i) => {
+                    const item = player.items[i];
+                    if (item && item !== 0) {
+                        return `<div class="item-icon" style="background-image: url('https://ddragon.leagueoflegends.com/cdn/${PATCH_VERSION}/img/item/${item}.png')"></div>`;
+                    }
+                    return `<div class="item-icon empty"></div>`;
+                }).join('');
+                
+                playerRow.innerHTML = `
+                    <div class="player-champion" style="background-image: url('${buildChampionIconUrl(player.championName)}')"></div>
+                    <div class="player-info">
+                        <div class="player-name">${player.summonerName}${player.tagLine ? '#' + player.tagLine : ''}</div>
+                        <div class="player-role">${player.teamPosition}</div>
+                    </div>
+                    <div class="player-kda">
+                        ${player.kills}/${player.deaths}/${player.assists}
+                        <div style="font-size: 11px; color: var(--text-soft);">${player.kda} KDA</div>
+                    </div>
+                    <div class="player-cs">
+                        ${player.cs} CS
+                        <div style="font-size: 11px; color: var(--text-soft);">${player.csPerMinute}/min</div>
+                    </div>
+                    <div class="player-damage">
+                        ${(player.totalDamageDealt / 1000).toFixed(1)}k
+                        <div style="font-size: 11px; color: var(--text-soft);">${player.damageShare}%</div>
+                    </div>
+                    <div class="player-items">
+                        ${itemsHTML}
+                    </div>
+                    <div class="click-indicator">
+                        <span>👆 View Profile</span>
+                    </div>
+                `;
+                
+                // Add click handler to fetch player profile
+                playerRow.addEventListener('click', () => {
+                    const playerName = player.summonerName + (player.tagLine ? '#' + player.tagLine : '');
+                    const region = getCurrentRegion();
+                    fetchPlayerProfile(playerName, region);
+                });
+                
+                container.appendChild(playerRow);
+            });
+        }
+
+        function populateObjectives(containerId, objectives) {
+            const container = document.getElementById(containerId);
+            
+            const objectivesList = [
+                { key: 'baron', icon: '🐉', name: 'Baron', count: objectives.baron },
+                { key: 'dragon', icon: '🔥', name: 'Dragon', count: objectives.dragon },
+                { key: 'tower', icon: '🏰', name: 'Towers', count: objectives.tower },
+                { key: 'inhibitor', icon: '💎', name: 'Inhibs', count: objectives.inhibitor }
+            ];
+            
+            container.innerHTML = objectivesList.map(obj => `
+                <div class="objective-item">
+                    <span class="objective-icon">${obj.icon}</span>
+                    <div class="objective-count">${obj.count}</div>
+                    <div class="objective-name">${obj.name}</div>
+                </div>
+            `).join('');
+        }
+
+        function closeMatchDetails() {
+            const modal = document.getElementById('matchDetailsModal');
+            modal.classList.remove('active');
+        }
+
+        // Close modal when clicking outside of it
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('matchDetailsModal');
+            if (event.target === modal) {
+                closeMatchDetails();
+            }
+        });
+
+        // Get current region from the search form or default to na1
+        function getCurrentRegion() {
+            const regionSelect = document.getElementById('region');
+            return regionSelect ? regionSelect.value : 'na1';
+        }
+
+        // Fetch player profile when clicking on a player in match details
+        async function fetchPlayerProfile(playerName, region) {
+            try {
+                // Show loading state
+                showPlayerProfileLoading(playerName);
+                
+                // Build query parameters - API expects 'region' and 'name'
+                const params = new URLSearchParams({
+                    region: region,
+                    name: playerName
+                });
+                
+                console.log(`Fetching profile: ${playerName} in region ${region}`);
+                console.log(`API URL: /api/summoner?${params.toString()}`);
+                
+                const response = await fetch(`/api/summoner?${params.toString()}`);
+                
+                // Check if response is ok
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('API Response:', data);
+                
+                // The API response structure is the same as normal search
+                // Show success notification
+                showNotification(`Successfully loaded profile for ${playerName}!`, 'success');
+                
+                // Close match details modal
+                closeMatchDetails();
+                
+                // Update the main profile with the fetched player data using the same method as normal search
+                displayPlayerProfile(data, playerName, region);
+                
+                // Scroll to profile section
+                scrollToSection('profile');
+            } catch (error) {
+                console.error('Error fetching player profile:', error);
+                showPlayerProfileError(playerName, `Failed to load player profile: ${error.message}`);
+            }
+        }
+
+        function showPlayerProfileLoading(playerName) {
+            // Show loading toast or indicator
+            showNotification(`Loading profile for ${playerName}...`, 'info');
+        }
+
+        function showPlayerProfileError(playerName, error) {
+            // Show error notification instead of alert
+            showNotification(`Failed to load profile for ${playerName}: ${error}`, 'error');
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-icon">${type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️'}</span>
+                    <span class="notification-message">${message}</span>
+                </div>
+            `;
+            
+            // Add to page
+            document.body.appendChild(notification);
+            
+            // Trigger animation
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            // Auto remove after delay
+            setTimeout(() => {
+                notification.classList.add('hide');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, type === 'error' ? 4000 : 2000);
+        }
+
+        function displayPlayerProfile(summoner, playerName, region) {
+            // Update the search form to show the current player
+            const [name, tagline] = playerName.includes('#') ? playerName.split('#') : [playerName, ''];
+            
+            const summonerNameInput = document.getElementById('summonerName');
+            const summonerTaglineInput = document.getElementById('summonerTagline');
+            const regionSelect = document.getElementById('regionSelect');
+            
+            if (summonerNameInput) {
+                summonerNameInput.value = name;
+            }
+            if (summonerTaglineInput) {
+                summonerTaglineInput.value = tagline;
+            }
+            if (regionSelect) {
+                regionSelect.value = region;
+            }
+            
+            // Update profile data using the same method as normal search
+            applySummonerData(summoner);
+        }
+
+
+
         const PATCH_VERSION = "14.15.1";
         const queueLabels = {
             RANKED_SOLO: "Ranked Solo",
@@ -2861,6 +4005,14 @@
                 const card = document.createElement("article");
                 card.className = "match-card";
                 const iconUrl = buildChampionIconUrl(match.champion);
+                
+                // Make match card clickable if matchId is available
+                if (match.matchId && state.profile?.region) {
+                    card.style.cursor = 'pointer';
+                    card.onclick = () => openMatchDetails(match.matchId, state.profile.region);
+                    card.title = 'Click to view detailed match information';
+                }
+                
                 card.innerHTML = `
                     <div class="match-meta">
                         <div class="champ-icon" style="background-image:url('${iconUrl}')"></div>
@@ -2878,6 +4030,7 @@
                         <p class="stat-subtext">${match.kp || ""}</p>
                     </div>
                     <div class="match-time">${match.timeAgo || "Recently"}</div>
+                    ${match.matchId ? '<div class="match-details-hint" style="font-size: 11px; color: var(--text-soft); text-align: center; margin-top: 4px;">Click for details</div>' : ''}
                 `;
                 container.appendChild(card);
             });
@@ -2980,6 +4133,9 @@
                     console.log("LP value:", entry.lp, "Type:", typeof entry.lp);
                 }
                 const row = document.createElement("tr");
+                row.style.cursor = "pointer";
+                row.setAttribute("data-player-name", entry.name);
+                row.setAttribute("data-region", state.selectedRegion);
                 row.innerHTML = `
                     <td>#${entry.rank}</td>
                     <td>${entry.name}</td>
@@ -2987,6 +4143,61 @@
                     <td>${entry.wr}</td>
                     <td>${entry.role}</td>
                 `;
+                
+                // Add click handler to fetch player profile
+                row.addEventListener('click', async function() {
+                    console.log(`Clicked on leaderboard entry: ${entry.name} in region ${state.selectedRegion}`);
+                    
+                    // Show loading notification
+                    showNotification(`Loading ${entry.name}'s profile...`, 'info');
+                    
+                    try {
+                        // Parse the name#tag format
+                        const fullName = entry.name;
+                        let gameName, tagLine;
+                        
+                        if (fullName.includes('#')) {
+                            [gameName, tagLine] = fullName.split('#');
+                        } else {
+                            gameName = fullName;
+                            tagLine = state.selectedRegion.toUpperCase();
+                        }
+                        
+                        console.log(`Fetching profile for: ${gameName}#${tagLine} in region ${state.selectedRegion}`);
+                        
+                        // Fetch the player profile using the existing API
+                        const response = await fetch(`/api/summoner?region=${state.selectedRegion}&name=${encodeURIComponent(gameName + '#' + tagLine)}`);
+                        
+                        if (!response.ok) {
+                            throw new Error(`Failed to fetch profile: ${response.status}`);
+                        }
+                        
+                        const profileData = await response.json();
+                        console.log('Received profile data:', profileData);
+                        
+                        // Apply the new profile data to the page
+                        applySummonerData(profileData, `${gameName}#${tagLine}`, state.selectedRegion);
+                        
+                        // Scroll to profile section smoothly
+                        const profileSection = document.getElementById('profile');
+                        if (profileSection) {
+                            const headerHeight = document.querySelector('header').offsetHeight;
+                            const targetPosition = profileSection.offsetTop - headerHeight - 20;
+                            
+                            window.scrollTo({
+                                top: targetPosition,
+                                behavior: 'smooth'
+                            });
+                        }
+                        
+                        showNotification(`Loaded ${entry.name}'s profile successfully!`, 'success');
+                        
+                    } catch (error) {
+                        console.error('Error fetching leaderboard player profile:', error);
+                        showNotification(`Failed to load ${entry.name}'s profile: ${error.message}`, 'error');
+                    }
+                });
+                
                 tbody.appendChild(row);
             });
         }
@@ -3023,9 +4234,13 @@
                 state.matches[key] = nextMatches;
             }
 
-            state.champions = Array.isArray(payload?.champions) && payload.champions.length
-                ? payload.champions
-                : (isLive ? [] : clone(fallbackData.champions));
+            // Use incoming champions if available, otherwise fallback to demo data
+            if (Array.isArray(payload?.champions) && payload.champions.length > 0) {
+                state.champions = payload.champions;
+            } else {
+                // If no champion data available, use fallback data regardless of isLive status
+                state.champions = clone(fallbackData.champions);
+            }
 
             // Don't set leaderboard from summoner data - it's handled separately by fetchLeaderboardData
             // state.leaderboard is managed independently
@@ -3092,20 +4307,38 @@
         }
 
         function scrollToSection(sectionId, event) {
-            if (event) {
-                event.preventDefault();
-            }
-            const section = document.getElementById(sectionId);
-            const header = document.querySelector('header');
-            const headerHeight = header.offsetHeight;
+            console.log('scrollToSection called with:', sectionId);
             
-            if (section) {
-                const targetPosition = section.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+            const section = document.getElementById(sectionId);
+            if (!section) {
+                console.warn('Section not found:', sectionId);
+                return;
+            }
+            
+            // Get header height
+            const header = document.querySelector('header');
+            const headerHeight = header ? header.offsetHeight : 80;
+            
+            // Special handling for search - scroll to very top
+            if (sectionId === 'search') {
+                console.log('Scrolling to top for search');
                 window.scrollTo({
-                    top: targetPosition,
+                    top: 0,
                     behavior: 'smooth'
                 });
+                return;
             }
+            
+            // For other sections, scroll to just above the header
+            const elementTop = section.offsetTop;
+            const targetPosition = elementTop - headerHeight - 20;
+            
+            console.log('Scrolling to position:', targetPosition, 'for section:', sectionId);
+            
+            window.scrollTo({
+                top: Math.max(0, targetPosition),
+                behavior: 'smooth'
+            });
         }
 
         function scrollToSearch() {
@@ -3304,64 +4537,43 @@
             }
         }
 
-        // Smooth scroll handling
+        // SIMPLE WORKING NAVIGATION - NO MORE JUMPING!
+        // Simple navigation scroll handler
         document.addEventListener('DOMContentLoaded', function() {
-            const html = document.documentElement;
-            html.style.scrollBehavior = 'smooth';
-            html.style.scrollPaddingTop = '0px';
-
-            // Initialize leaderboard will be done by fetchLeaderboardData("kr")
-
-            // Handle all navigation links
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
+            console.log('Setting up navigation...');
+            
+            // Get all navigation links
+            const navLinks = document.querySelectorAll('.nav-links a[href^="#"]');
+            console.log('Found', navLinks.length, 'navigation links');
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
                     e.preventDefault();
-                    const targetId = this.getAttribute('href').slice(1);
+                    const targetId = this.getAttribute('href').substring(1);
+                    console.log('Navigating to:', targetId);
                     
-                    // Special case: scroll to top for "Search"
                     if (targetId === 'search') {
+                        // For search, scroll all the way to the top
                         window.scrollTo({
                             top: 0,
                             behavior: 'smooth'
                         });
                     } else {
-                        const target = document.getElementById(targetId);
-                        if (target) {
-                            // Scroll to target with header offset
-                            const headerHeight = 80;
-                            const elementPosition = target.getBoundingClientRect().top + window.pageYOffset;
-                            const offsetPosition = elementPosition - headerHeight;
-
+                        // For other sections, scroll to just above the header
+                        const targetElement = document.getElementById(targetId);
+                        if (targetElement) {
+                            const headerHeight = 70; // Height of the fixed header
+                            const elementTop = targetElement.getBoundingClientRect().top + window.pageYOffset;
+                            const scrollToPosition = elementTop - headerHeight;
+                            
                             window.scrollTo({
-                                top: offsetPosition,
+                                top: scrollToPosition,
                                 behavior: 'smooth'
                             });
                         }
                     }
                 });
             });
-
-            // Also handle the "My Profile" button in nav if it has a scroll action
-            const profileBtn = document.querySelector('.profile-btn');
-            if (profileBtn) {
-                profileBtn.addEventListener('click', function(e) {
-                    const href = this.getAttribute('data-scroll');
-                    if (href) {
-                        e.preventDefault();
-                        const target = document.getElementById(href);
-                        if (target) {
-                            const headerHeight = 80;
-                            const elementPosition = target.getBoundingClientRect().top + window.pageYOffset;
-                            const offsetPosition = elementPosition - headerHeight;
-
-                            window.scrollTo({
-                                top: offsetPosition,
-                                behavior: 'smooth'
-                            });
-                        }
-                    }
-                });
-            }
         });
 
         // Add mock data for champions
@@ -3526,5 +4738,64 @@
             background-position: center 30%;
         }
     </style>
+
+    <!-- Match Details Modal -->
+    <div id="matchDetailsModal" class="match-details-modal">
+        <div class="match-details-content">
+            <div class="match-details-header">
+                <h2>Match Details</h2>
+                <button class="close-btn" onclick="closeMatchDetails()">✕ Close</button>
+            </div>
+            
+            <div class="match-overview">
+                <div class="team-score-section">
+                    <div class="team-score blue-score" id="blueTeamScore">0</div>
+                    <div class="score-label">Blue Team Kills</div>
+                </div>
+                <div class="match-info">
+                    <div class="duration" id="matchDuration">--:--</div>
+                    <div class="game-mode" id="gameMode">Loading...</div>
+                </div>
+                <div class="team-score-section">
+                    <div class="team-score red-score" id="redTeamScore">0</div>
+                    <div class="score-label">Red Team Kills</div>
+                </div>
+            </div>
+
+            <div class="teams-container">
+                <div class="team-section blue-team">
+                    <div class="team-header">
+                        <span class="team-name blue">Blue Team</span>
+                        <span class="team-kda" id="blueTeamKDA">0/0/0</span>
+                    </div>
+                    <div class="players-list" id="blueTeamPlayers">
+                        <!-- Blue team players will be populated here -->
+                    </div>
+                </div>
+
+                <div class="team-section red-team">
+                    <div class="team-header">
+                        <span class="team-name red">Red Team</span>
+                        <span class="team-kda" id="redTeamKDA">0/0/0</span>
+                    </div>
+                    <div class="players-list" id="redTeamPlayers">
+                        <!-- Red team players will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="objectives-section">
+                <h3 style="text-align: center; margin-bottom: 16px; color: var(--accent);">Objectives</h3>
+                <div class="objectives-grid">
+                    <div class="objectives-team" id="blueObjectives">
+                        <!-- Blue team objectives -->
+                    </div>
+                    <div class="objectives-team" id="redObjectives">
+                        <!-- Red team objectives -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

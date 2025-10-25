@@ -14,6 +14,11 @@ provider:
     MATCH_HISTORY_COUNT: ${env:MATCH_HISTORY_COUNT, '10'}
     MATCH_DETAIL_CONCURRENCY: ${env:MATCH_DETAIL_CONCURRENCY, '4'}
     PREFETCH_SUMMONERS: ${env:PREFETCH_SUMMONERS, ''}
+    RSO_CLIENT_ID: ${env:RSO_CLIENT_ID, ''}
+    RSO_CLIENT_SECRET: ${env:RSO_CLIENT_SECRET, ''}
+    RSO_REDIRECT_URI: ${env:RSO_REDIRECT_URI, ''}
+    RSO_BASE_URL: ${env:RSO_BASE_URL, 'https://auth.riotgames.com'}
+    SESSION_SECRET: ${env:SESSION_SECRET, ''}
 
 functions:
   api:
