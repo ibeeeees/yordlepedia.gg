@@ -89,7 +89,21 @@ app.get("/api/health", (req, res) => {
         status: "healthy",
         timestamp: new Date().toISOString(),
         hasApiKey: !!RIOT_API_KEY,
-        apiKeyPrefix: RIOT_API_KEY ? RIOT_API_KEY.substring(0, 10) + "..." : "NOT SET"
+        apiKeyPrefix: RIOT_API_KEY ? RIOT_API_KEY.substring(0, 10) + "..." : "NOT SET",
+        environment: process.env.NODE_ENV || "development"
+    });
+});
+
+// Debug endpoint for troubleshooting
+app.get("/api/debug", (req, res) => {
+    return res.status(200).json({
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || "development",
+        hasRiotApiKey: !!RIOT_API_KEY,
+        apiKeyLength: RIOT_API_KEY ? RIOT_API_KEY.length : 0,
+        apiKeyPrefix: RIOT_API_KEY ? RIOT_API_KEY.substring(0, 15) + "..." : "NOT_SET",
+        regions: Object.keys(regionToCluster),
+        clusters: Object.values(regionToCluster).filter((v, i, a) => a.indexOf(v) === i)
     });
 });
 
@@ -103,9 +117,10 @@ app.get("/api/summoner", async (req, res) => {
 
     try {
         const summonerName = decodeURIComponent(name);
+        const cacheKey = `${summonerName}-${region}`;
         
         // Check response cache first
-        const cachedResponse = responseCache.get(summonerName);
+        const cachedResponse = responseCache.get(cacheKey);
         if (cachedResponse) {
             return res.json(cachedResponse);
         }
@@ -127,9 +142,12 @@ app.get("/api/summoner", async (req, res) => {
             tagLine = ""; // Will fail if tag is required
         }
 
-        // Fetch account by riot-id (gameName#tagLine)
+        // Get the cluster for the region
+        const cluster = regionToCluster[region.toLowerCase()] || "americas";
+
+        // Fetch account by riot-id (gameName#tagLine) using correct cluster
         const accountResponse = await axios.get(
-            `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`,
+            `https://${cluster}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`,
             {
                 headers: { "X-Riot-Token": RIOT_API_KEY }
             }
@@ -137,9 +155,9 @@ app.get("/api/summoner", async (req, res) => {
 
         const { puuid, gameName: accountGameName, tagLine: accountTagLine } = accountResponse.data;
 
-        // Fetch summoner by PUUID
+        // Fetch summoner by PUUID using correct region
         const summonerResponse = await axios.get(
-            `https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
+            `https://${region.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
             {
                 headers: { "X-Riot-Token": RIOT_API_KEY }
             }
@@ -150,9 +168,9 @@ app.get("/api/summoner", async (req, res) => {
         // Add name from Account API (Summoner v4 doesn't return name)
         summonerData.name = `${accountGameName}#${accountTagLine}`;
 
-        // Fetch ranked stats
+        // Fetch ranked stats using correct region
         const rankedResponse = await axios.get(
-            `https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerData.id}`,
+            `https://${region.toLowerCase()}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerData.id}`,
             {
                 headers: { "X-Riot-Token": RIOT_API_KEY }
             }
@@ -160,9 +178,9 @@ app.get("/api/summoner", async (req, res) => {
 
         const rankedStats = rankedResponse.data.find(e => e.queueType === "RANKED_SOLO_5x5") || {};
         
-        // Fetch match history
+        // Fetch match history using correct cluster
         const matchesResponse = await axios.get(
-            `https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=20`,
+            `https://${cluster}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=20`,
             {
                 headers: { "X-Riot-Token": RIOT_API_KEY }
             }
@@ -177,7 +195,7 @@ app.get("/api/summoner", async (req, res) => {
             const batch = matchIds.slice(i, i + concurrency);
             const batchPromises = batch.map(matchId =>
                 axios.get(
-                    `https://americas.api.riotgames.com/lol/match/v5/matches/${matchId}`,
+                    `https://${cluster}.api.riotgames.com/lol/match/v5/matches/${matchId}`,
                     {
                         headers: { "X-Riot-Token": RIOT_API_KEY }
                     }
@@ -192,17 +210,18 @@ app.get("/api/summoner", async (req, res) => {
         const enrichedData = enrichData(summonerData, rankedStats, matches, puuid);
 
         // Cache and return
-        responseCache.set(summonerName, enrichedData);
+        responseCache.set(cacheKey, enrichedData);
         return res.json(enrichedData);
 
     } catch (error) {
         const errorData = error.response?.data || error.message;
         const errorStatus = error.response?.status || "unknown";
-        console.error(`[Summoner Error] Status: ${errorStatus}, Data:`, errorData);
+        console.error(`[Summoner Error] Region: ${region}, Status: ${errorStatus}, Data:`, errorData);
         return res.status(404).json({ 
             error: "Summoner not found",
             details: typeof errorData === 'string' ? errorData : JSON.stringify(errorData),
-            status: errorStatus
+            status: errorStatus,
+            region: region
         });
     }
 });
@@ -246,13 +265,15 @@ const fallbackPayload = {
   }
 };
 
-// Main summoner endpoint
+// Main summoner endpoint (legacy - defaults to NA1)
 app.get("/api/summoner/:summonerName", async (req, res) => {
     try {
         const summonerName = decodeURIComponent(req.params.summonerName);
+        const region = req.query.region || "na1"; // Default to na1 if no region specified
+        const cacheKey = `${summonerName}-${region}`;
         
         // Check response cache first
-        const cachedResponse = responseCache.get(summonerName);
+        const cachedResponse = responseCache.get(cacheKey);
         if (cachedResponse) {
             return res.json(cachedResponse);
         }
@@ -270,9 +291,12 @@ app.get("/api/summoner/:summonerName", async (req, res) => {
             tagLine = ""; // Will fail if tag is required
         }
 
-        // Fetch account by riot-id (gameName#tagLine)
+        // Get the cluster for the region
+        const cluster = regionToCluster[region.toLowerCase()] || "americas";
+
+        // Fetch account by riot-id (gameName#tagLine) using correct cluster
         const accountResponse = await axios.get(
-            `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`,
+            `https://${cluster}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`,
             {
                 headers: { "X-Riot-Token": RIOT_API_KEY }
             }
@@ -280,9 +304,9 @@ app.get("/api/summoner/:summonerName", async (req, res) => {
 
         const { puuid, gameName: accountGameName, tagLine: accountTagLine } = accountResponse.data;
 
-        // Fetch summoner by PUUID
+        // Fetch summoner by PUUID using correct region
         const summonerResponse = await axios.get(
-            `https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
+            `https://${region.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
             {
                 headers: { "X-Riot-Token": RIOT_API_KEY }
             }
@@ -293,9 +317,9 @@ app.get("/api/summoner/:summonerName", async (req, res) => {
         // Add name from Account API (Summoner v4 doesn't return name)
         summonerData.name = `${accountGameName}#${accountTagLine}`;
 
-        // Fetch ranked stats
+        // Fetch ranked stats using correct region
         const rankedResponse = await axios.get(
-            `https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerData.id}`,
+            `https://${region.toLowerCase()}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerData.id}`,
             {
                 headers: { "X-Riot-Token": RIOT_API_KEY }
             }
@@ -303,9 +327,9 @@ app.get("/api/summoner/:summonerName", async (req, res) => {
 
         const rankedStats = rankedResponse.data.find(e => e.queueType === "RANKED_SOLO_5x5") || {};
         
-        // Fetch match history
+        // Fetch match history using correct cluster
         const matchesResponse = await axios.get(
-            `https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=20`,
+            `https://${cluster}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=20`,
             {
                 headers: { "X-Riot-Token": RIOT_API_KEY }
             }
@@ -314,13 +338,13 @@ app.get("/api/summoner/:summonerName", async (req, res) => {
         const matchIds = matchesResponse.data;
         const matches = [];
 
-        // Fetch match details (limit to 5 concurrent requests)
+        // Fetch match details (limit to 4 concurrent requests)
         const concurrency = 4;
         for (let i = 0; i < matchIds.length; i += concurrency) {
             const batch = matchIds.slice(i, i + concurrency);
             const batchPromises = batch.map(matchId =>
                 axios.get(
-                    `https://americas.api.riotgames.com/lol/match/v5/matches/${matchId}`,
+                    `https://${cluster}.api.riotgames.com/lol/match/v5/matches/${matchId}`,
                     {
                         headers: { "X-Riot-Token": RIOT_API_KEY }
                     }
@@ -335,7 +359,7 @@ app.get("/api/summoner/:summonerName", async (req, res) => {
         const enrichedData = enrichData(summonerData, rankedStats, matches, puuid);
 
         // Cache and return
-        responseCache.set(summonerName, enrichedData);
+        responseCache.set(cacheKey, enrichedData);
         return res.json(enrichedData);
 
     } catch (error) {
