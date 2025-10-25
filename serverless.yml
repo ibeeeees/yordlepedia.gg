@@ -1,0 +1,34 @@
+service: yordlepedia-gg
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  timeout: 30
+  memorySize: 512
+  environment:
+    RIOT_API_KEY: ${env:RIOT_API_KEY, 'RGAPI-97d889ae-6486-4a41-b22f-ca8cea0c5233'}
+    MATCH_HISTORY_COUNT: ${env:MATCH_HISTORY_COUNT, '10'}
+    MATCH_DETAIL_CONCURRENCY: ${env:MATCH_DETAIL_CONCURRENCY, '4'}
+    PREFETCH_SUMMONERS: ${env:PREFETCH_SUMMONERS, ''}
+
+functions:
+  api:
+    handler: server.handler
+    events:
+      - httpApi:
+          path: /{proxy+}
+          method: ANY
+      - httpApi:
+          path: /
+          method: ANY
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3000

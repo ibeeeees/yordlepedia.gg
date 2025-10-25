@@ -216,6 +216,8 @@
             100% { background-position: 200% center; }
         }
 
+
+
         .hero-text-box {
             margin: 28px 0 42px;
             padding: 24px;
@@ -282,6 +284,56 @@
         .search-wrapper {
             display: flex;
             gap: 12px;
+            align-items: stretch;
+        }
+
+        .name-tagline-wrapper {
+            display: flex;
+            flex: 1;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 999px;
+            background: rgba(13, 25, 38, 0.85);
+            transition: border-color 0.25s, box-shadow 0.25s;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .name-tagline-wrapper:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 25px rgba(255, 210, 0, 0.2);
+        }
+
+        .name-input {
+            flex: 2;
+            border: none;
+            background: transparent;
+            color: var(--text-main);
+            padding: 16px 22px;
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            width: 0; /* Prevent flex overflow */
+            min-width: 0; /* Allow shrinking */
+        }
+
+        .tagline-input {
+            flex: 1;
+            max-width: 140px;
+            border: none;
+            border-left: 1px solid rgba(255, 255, 255, 0.12);
+            background: transparent;
+            color: var(--text-main);
+            padding: 16px 18px;
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            width: 0; /* Prevent flex overflow */
+            min-width: 0; /* Allow shrinking */
+        }
+
+        .name-input::placeholder,
+        .tagline-input::placeholder {
+            color: rgba(183, 177, 165, 0.7);
         }
 
         .region-select,
@@ -399,8 +451,8 @@
 
         .profile-summary {
             display: grid;
-            grid-template-columns: minmax(300px, 1.2fr) 3fr;
-            gap: 28px;
+            grid-template-columns: minmax(600px, 1fr) minmax(400px, 1fr);
+            gap: 32px;
         }
 
         .profile-card {
@@ -409,9 +461,226 @@
             padding: 28px;
             border: 1px solid var(--border);
             position: relative;
-            overflow: hidden;
+            overflow: visible;
             height: fit-content;
             align-self: start;
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 650px;
+        }
+
+        .banner-box {
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            position: relative;
+            overflow: visible;
+            transition: none;
+            box-shadow: none;
+            min-height: auto;
+            display: block;
+            gap: 0;
+            width: 100%;
+        }
+
+        .banner-box::before {
+            display: none;
+        }
+
+        .banner-box:hover::before {
+            display: none;
+        }
+
+        .banner-box:hover {
+            transform: none;
+            border-color: transparent;
+            box-shadow: none;
+        }
+
+        .profile-content-box {
+            background: linear-gradient(165deg, var(--bg-card-dark) 0%, rgba(16, 31, 48, 0.95) 100%);
+            border: 1px solid var(--accent);
+            border-top: none;
+            border-radius: 0 0 14px 14px;
+            padding: 22px;
+            position: relative;
+            overflow: visible;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(242, 204, 143, 0.05);
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .profile-content-box::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, 
+                var(--accent), 
+                var(--accent-strong), 
+                var(--accent), 
+                var(--accent-strong));
+            background-size: 200% 200%;
+            border-radius: 2px 2px 16px 16px;
+            z-index: -1;
+            opacity: 0;
+            animation: gradientShift 4s ease infinite;
+            transition: opacity 0.3s ease;
+        }
+
+        .profile-content-box:hover::before {
+            opacity: 0.3;
+        }
+
+        .profile-content-box:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-strong);
+            box-shadow: 0 0 30px rgba(242, 204, 143, 0.1);
+        }
+
+        .profile-content-box::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, 
+                var(--accent), 
+                var(--accent-strong), 
+                var(--accent), 
+                var(--accent-strong));
+            background-size: 200% 200%;
+            border-radius: 14px;
+            z-index: -1;
+            opacity: 0;
+            animation: gradientShift 4s ease infinite;
+            transition: opacity 0.3s ease;
+        }
+
+        .profile-content-box:hover::before {
+            opacity: 0.3;
+        }
+
+        .profile-content-box:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-strong);
+            box-shadow: 0 0 30px rgba(242, 204, 143, 0.1);
+        }
+
+        /* Override enhanced effects for right side stat boxes */
+        .enhanced-stats .stat-box {
+            background: rgba(16, 31, 48, 0.3);
+            border: 1px solid rgba(242, 204, 143, 0.1);
+            box-shadow: none;
+        }
+
+        .enhanced-stats .stat-box::before {
+            display: none;
+        }
+
+        .enhanced-stats .stat-box:hover {
+            transform: none;
+            border-color: rgba(242, 204, 143, 0.2);
+            box-shadow: 0 0 10px rgba(242, 204, 143, 0.05);
+        }
+
+        .enhanced-stats .stat-box:hover::before {
+            display: none;
+        }
+
+        .enhanced-stats .stat-box:hover .stat-icon {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(242, 204, 143, 0.2);
+        }
+
+        /* Add colored progress bars for right side enhanced stats */
+        .enhanced-stats .performance-fill {
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+        }
+
+        .enhanced-stats .combat-fill {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+        }
+
+        .enhanced-stats .economy-fill {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+
+        .enhanced-stats .impact-fill {
+            background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+        }
+
+        .enhanced-stats .comparison-bar {
+            background: rgba(255, 255, 255, 0.1);
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .enhanced-stats .comparison-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        /* Ensure proper spacing for left side stat boxes */
+        .profile-content-box .stat-box {
+            padding: 20px;
+            min-height: 160px;
+            font-size: 0.95rem;
+            overflow: visible;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .profile-content-box .stat-comparison {
+            margin-top: 14px;
+            width: 100%;
+            padding-bottom: 8px;
+        }
+
+        .profile-content-box .comparison-bar {
+            width: calc(100% - 4px);
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin: 10px 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .profile-content-box .comparison-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .profile-content-box .comparison-labels,
+        .profile-content-box .rank-change {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin: 6px 0;
+            padding: 0 2px;
+        }
+
+        .profile-content-box .comparison-labels span,
+        .profile-content-box .rank-change span {
+            display: block;
+            flex: 1;
+            white-space: nowrap;
+        }
+
+        .profile-content-box .rank-change span:last-child,
+        .profile-content-box .comparison-labels span:last-child {
+            text-align: right;
         }
 
         .soon-badge { 
@@ -433,17 +702,67 @@
         /* Profile banner (clickable video) */
         .profile-banner { 
             position: relative; 
+            width: 100%;
             height: 200px; 
             border-radius: 14px 14px 0 0; /* Updated to only round top corners */
             background: var(--bg-card-dark);
-            border: 1px solid var(--border); 
+            border: 1px solid var(--accent); 
             border-bottom: none; /* Remove bottom border */
             cursor: pointer; 
             display: grid; 
             place-items: center; 
             color: var(--text-soft); 
             overflow: hidden;
-            transition: border-color 0.2s;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            box-shadow: 0 0 20px rgba(242, 204, 143, 0.05);
+        }
+
+        .profile-banner::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, 
+                var(--accent), 
+                var(--accent-strong), 
+                var(--accent), 
+                var(--accent-strong));
+            background-size: 200% 200%;
+            border-radius: 16px 16px 2px 2px;
+            z-index: -1;
+            opacity: 0;
+            animation: gradientShift 4s ease infinite;
+            transition: opacity 0.3s ease;
+        }
+
+        .profile-banner:hover::before {
+            opacity: 0.3;
+        }
+
+        .profile-banner:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-strong);
+            box-shadow: 0 0 30px rgba(242, 204, 143, 0.1);
+        }
+
+        .profile-banner video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 13px 13px 0 0; /* Slightly smaller than container to avoid border overflow */
+            z-index: 1;
+        }
+
+        .profile-banner .play-pill,
+        .profile-banner .banner-actions {
+            position: relative;
+            z-index: 2;
         }
 
         .profile-banner:hover {
@@ -479,16 +798,7 @@
         }
         .btn-mini { padding:6px 8px; border-radius:8px; border:1px solid rgba(255,255,255,.15); background: rgba(8,15,25,.6); color: var(--text-main); font-weight:700; font-size:.8rem; cursor:pointer; }
         .profile-banner .play-pill { background: rgba(255,210,0,0.18); color: var(--accent); border: 1px solid rgba(255,210,0,0.35); padding: 8px 12px; border-radius: 999px; font-weight: 700; letter-spacing: .5px; }
-        .profile-identity {
-            display: grid;
-            grid-template-columns: 96px 1fr;
-            gap: 14px;
-            padding: 24px;
-            background: var(--bg-card-dark);
-            border: 1px solid var(--border);
-            border-top: none;
-            border-radius: 0 0 14px 14px;
-        }
+
         .avatar.avatar-lg {
             width: 96px;
             height: 96px;
@@ -588,6 +898,183 @@
 
         .stat-box.vision::after {
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F2CC8F'%3E%3Cpath d='M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z'/%3E%3C/svg%3E");
+        }
+
+        /* Enhanced 4-box stat icons */
+        .stat-icon {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .performance-icon {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(59, 130, 246, 0.2));
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+        }
+
+        .performance-icon::before {
+            content: '⭐';
+            font-size: 18px;
+            line-height: 1;
+            filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.5));
+        }
+
+        .combat-icon {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 101, 101, 0.2));
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .combat-icon::before {
+            content: '⚔️';
+            font-size: 18px;
+            line-height: 1;
+            filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.5));
+        }
+
+        .economy-icon {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+        }
+
+        .economy-icon::before {
+            content: '💰';
+            font-size: 18px;
+            line-height: 1;
+            filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.5));
+        }
+
+        .impact-icon {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(147, 51, 234, 0.2));
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+        }
+
+        .impact-icon::before {
+            content: '💥';
+            font-size: 18px;
+            line-height: 1;
+            filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
+        }
+
+        /* Stat box hover effects for icons */
+        .stat-box:hover .stat-icon {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 0 30px rgba(242, 204, 143, 0.4);
+        }
+
+        /* Custom progress bar colors */
+        .performance-fill {
+            background: linear-gradient(90deg, #22c55e 0%, #3b82f6 100%);
+        }
+
+        .combat-fill {
+            background: linear-gradient(90deg, #ef4444 0%, #f56565 100%);
+        }
+
+        .economy-fill {
+            background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+        }
+
+        .impact-fill {
+            background: linear-gradient(90deg, #a855f7 0%, #9333ea 100%);
+        }
+
+        .enhanced-stats {
+            grid-template-columns: 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        @media (max-width: 1200px) {
+            .profile-summary {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+            
+            .profile-card {
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .enhanced-stats {
+                grid-template-columns: 1fr;
+                gap: 16px;
+                max-width: none;
+            }
+        }
+
+        /* Enhanced stat box animations and effects */
+        .stat-box {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-box::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, 
+                var(--accent), 
+                var(--accent-strong), 
+                var(--accent), 
+                var(--accent-strong));
+            background-size: 200% 200%;
+            border-radius: 14px;
+            z-index: -1;
+            opacity: 0;
+            animation: gradientShift 4s ease infinite;
+            transition: opacity 0.3s ease;
+        }
+
+        .stat-box:hover::before {
+            opacity: 0.3;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Stat value number animation */
+        .stat-value {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-value::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.1), 
+                transparent);
+            animation: valueShine 3s infinite;
+        }
+
+        @keyframes valueShine {
+            0% { left: -100%; }
+            50% { left: -100%; }
+            100% { left: 100%; }
         }
 
         .stat-box::before {
@@ -828,36 +1315,25 @@
             display: grid;
             gap: 14px;
             position: relative;
-            overflow: hidden;
+            overflow: visible;
             transition: transform 0.2s, border-color 0.2s;
         }
 
         .champ-card::before {
             content: '';
             position: absolute;
-            top: 0;
-            right: 0;
-            width: 200px;
-            height: 200px;
+            inset: 0;
+            background-image: var(--champ-splash);
             background-size: cover;
-            background-position: center -20px;
-            opacity: 0.15;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.4;
             transition: opacity 0.3s;
             z-index: 0;
+            border-radius: 17px;
         }
 
-        .champ-card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                135deg,
-                var(--bg-card-dark) 0%,
-                var(--bg-card-dark) 40%,
-                transparent 100%
-            );
-            z-index: 1;
-        }
+
 
         .champ-card:hover {
             transform: translateY(-2px);
@@ -871,6 +1347,22 @@
         .champ-card > * {
             position: relative;
             z-index: 2;
+        }
+
+        .champ-card .champ-overlay {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(27, 45, 58, 0.9) 0%,
+                rgba(27, 45, 58, 0.7) 40%,
+                rgba(27, 45, 58, 0.3) 70%,
+                transparent 100%
+            );
+            z-index: 1;
+            border-radius: 17px;
+            pointer-events: none;
         }
 
         .champ-role {
@@ -1232,6 +1724,29 @@
                 gap: 10px;
             }
 
+            .name-tagline-wrapper {
+                flex-direction: column;
+                border-radius: 16px;
+            }
+
+            .name-input {
+                padding: 14px 18px;
+                border-left: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+                width: auto;
+                max-width: none;
+                flex: none;
+            }
+
+            .tagline-input {
+                padding: 14px 18px;
+                border-left: none;
+                border-bottom: none;
+                width: auto;
+                max-width: none;
+                flex: none;
+            }
+
             .region-select,
             .search-input,
             .search-btn {
@@ -1413,7 +1928,10 @@
                         <option value="tw2">TW</option>
                         <option value="vn2">VN</option>
                     </select>
-                    <input id="summonerSearch" class="search-input" type="search" placeholder="Search summoner name...">
+                    <div class="name-tagline-wrapper">
+                        <input id="summonerName" class="search-input name-input" type="search" placeholder="Summoner name">
+                        <input id="summonerTagline" class="search-input tagline-input" type="search" placeholder="Tag (e.g. NA1)">
+                    </div>
                     <button class="search-btn" onclick="handleSearch()">Search</button>
                 </div>
                 <p class="search-footer">Example: Try “Faker”, “Tyler1” or “ShowMaker” to preview the profile experience.</p>
@@ -1426,194 +1944,211 @@
                 <span id="profileHeadline">Gold II · 52.3% Winrate</span>
             </div>
             <div class="profile-summary">
-                <aside class="profile-card">
-                    <div class="profile-banner" onclick="openHighlight()" id="profileBanner">
-                        <div class="empty-banner-state">
-                            <p style="font-size:1.1rem; margin-bottom:8px;">No Highlight Video Set</p>
-                            <p style="font-size:0.9rem; color:var(--text-muted);">Upload a video or set URL to showcase your best plays</p>
-                        </div>
-                        <div class="banner-actions" onclick="event.stopPropagation()">
-                            <button class="btn-mini" onclick="setBannerClip()">Set URL</button>
-                            <button class="btn-mini" onclick="document.getElementById('uploadVideo').click()">Upload</button>
-                        </div>
-                        <input type="file" id="uploadVideo" accept="video/*" style="display:none" onchange="handleVideoUpload(event)">
-                    </div>
-                    <div class="profile-identity">
-                        <div class="avatar avatar-lg" aria-hidden="true"></div>
-                        <div>
-                            <h3 id="profileName">SummonerName</h3>
-                            <p class="stat-subtext" id="profileMeta">NA · Level 218 · Top 3.2%</p>
-                            <span class="rank-pill" id="rankLabel">Ranked Solo · Gold II</span>
+                <aside class="profile-card" style="display: flex; flex-direction: column; gap: 0;">
+                    <!-- Banner Box - Full Width -->
+                    <div class="banner-box" style="width: 100%;">
+                        <div class="profile-banner" onclick="openHighlight()" id="profileBanner">
+                            <div class="empty-banner-state">
+                                <p style="font-size:1.1rem; margin-bottom:8px;">No Highlight Video Set</p>
+                                <p style="font-size:0.9rem; color:var(--text-muted);">Upload a video or set URL to showcase your best plays</p>
+                            </div>
+                            <div class="banner-actions" onclick="event.stopPropagation()">
+                                <button class="btn-mini" onclick="setBannerClip()">Set URL</button>
+                                <button class="btn-mini" onclick="document.getElementById('uploadVideo').click()">Upload</button>
+                            </div>
+                            <input type="file" id="uploadVideo" accept="video/*" style="display:none" onchange="handleVideoUpload(event)">
                         </div>
                     </div>
-                    <div style="margin-top:14px">
-                        <div class="stat-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--stat-box-gap)">
+
+                    <!-- Profile Info & Stats Box -->
+                    <div class="profile-content-box" style="width: 100%; display: flex; flex-direction: column; gap: 18px; padding-bottom: 24px;">
+                        <div class="profile-identity" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                            <div class="avatar avatar-lg" aria-hidden="true"></div>
+                            <div style="flex: 1; min-width: 0;">
+                                <h3 id="profileName" style="margin: 0 0 4px 0;">SummonerName</h3>
+                                <p class="stat-subtext" id="profileMeta" style="margin: 0 0 6px 0;">NA · Level 218 · Top 3.2%</p>
+                            </div>
+                        </div>
+
+                        <div class="stat-grid" style="display: grid; grid-template-columns: 1fr; gap: 16px; overflow: visible; padding: 4px;">
                             <div class="stat-box wins">
-                                <h4 style="font-size: 1.1rem;">Win Rate</h4>
-                                <div id="statWinRateValue" style="font-size: 1.8rem; font-weight: 600;">52.3%</div>
+                                <h4 style="font-size: 1.1rem; margin: 0 0 8px 0; color: var(--text-primary);">Win Rate</h4>
+                                <div id="statWinRateValue" style="font-size: 1.8rem; font-weight: 600; margin: 0 0 12px 0; color: var(--accent);">52.3%</div>
                                 <div class="stat-comparison">
                                     <div class="comparison-bar">
-                                        <div id="statWinRateFill" class="comparison-fill" style="width: 65%"></div>
+                                        <div id="statWinRateFill" class="comparison-fill" style="width: 65%; background: linear-gradient(90deg, #22c55e, #16a34a);"></div>
                                     </div>
-                                    <div class="comparison-labels">
+                                    <div class="comparison-labels" style="font-size: 0.85rem;">
                                         <span id="statWinRateAvg">Average: 49.8%</span>
                                         <span class="comparison-rank" id="statWinRateRank">Top 35%</span>
                                     </div>
-                                    <div class="rank-change">
-                                        <span id="statWinRateChange">+2.1%</span>
+                                    <div class="rank-change" style="font-size: 0.85rem;">
+                                        <span id="statWinRateChange" style="color: #22c55e;">+2.1%</span>
                                         <span>Last 30 days</span>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="stat-box kda">
-                                <h4 style="font-size: 1.1rem;">KDA Ratio</h4>
-                                <div id="statKDAValue" style="font-size: 1.8rem; font-weight: 600;">3.42</div>
+                                <h4 style="font-size: 1.1rem; margin: 0 0 8px 0; color: var(--text-primary);">KDA Ratio</h4>
+                                <div id="statKDAValue" style="font-size: 1.8rem; font-weight: 600; margin: 0 0 12px 0; color: var(--accent);">3.42</div>
                                 <div class="stat-comparison">
                                     <div class="comparison-bar">
-                                        <div id="statKDAFill" class="comparison-fill" style="width: 78%"></div>
+                                        <div id="statKDAFill" class="comparison-fill" style="width: 78%; background: linear-gradient(90deg, #3b82f6, #1d4ed8);"></div>
                                     </div>
-                                    <div class="comparison-labels">
+                                    <div class="comparison-labels" style="font-size: 0.85rem;">
                                         <span id="statKDAAvg">Average: 2.89</span>
                                         <span class="comparison-rank" id="statKDARank">Top 22%</span>
                                     </div>
-                                    <div class="rank-change">
-                                        <span id="statKDAChange">+0.31</span>
+                                    <div class="rank-change" style="font-size: 0.85rem;">
+                                        <span id="statKDAChange" style="color: #22c55e;">+0.31</span>
                                         <span>Last 30 days</span>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="stat-box damage">
-                                <h4 style="font-size: 1.1rem;">Avg Damage</h4>
-                                <div id="statDamageValue" style="font-size: 1.8rem; font-weight: 600;">24.8K</div>
+                                <h4 style="font-size: 1.1rem; margin: 0 0 8px 0; color: var(--text-primary);">Avg Damage</h4>
+                                <div id="statDamageValue" style="font-size: 1.8rem; font-weight: 600; margin: 0 0 12px 0; color: var(--accent);">24.8K</div>
                                 <div class="stat-comparison">
                                     <div class="comparison-bar">
-                                        <div id="statDamageFill" class="comparison-fill" style="width: 72%"></div>
+                                        <div id="statDamageFill" class="comparison-fill" style="width: 72%; background: linear-gradient(90deg, #f59e0b, #d97706);"></div>
                                     </div>
-                                    <div class="comparison-labels">
+                                    <div class="comparison-labels" style="font-size: 0.85rem;">
                                         <span id="statDamageAvg">Average: 21.2K</span>
                                         <span class="comparison-rank" id="statDamageRank">Top 28%</span>
                                     </div>
-                                    <div class="rank-change negative">
-                                        <span id="statDamageChange">-1.2K</span>
+                                    <div class="rank-change negative" style="font-size: 0.85rem;">
+                                        <span id="statDamageChange" style="color: #ef4444;">-1.2K</span>
                                         <span>Last 30 days</span>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="stat-box vision">
-                                <h4 style="font-size: 1.1rem;">Vision Score</h4>
-                                <div id="statVisionValue" style="font-size: 1.8rem; font-weight: 600;">42.6</div>
+                                <h4 style="font-size: 1.1rem; margin: 0 0 8px 0; color: var(--text-primary);">Vision Score</h4>
+                                <div id="statVisionValue" style="font-size: 1.8rem; font-weight: 600; margin: 0 0 12px 0; color: var(--accent);">42.6</div>
                                 <div class="stat-comparison">
                                     <div class="comparison-bar">
-                                        <div id="statVisionFill" class="comparison-fill" style="width: 85%"></div>
+                                        <div id="statVisionFill" class="comparison-fill" style="width: 85%; background: linear-gradient(90deg, #8b5cf6, #7c3aed);"></div>
                                     </div>
-                                    <div class="comparison-labels">
+                                    <div class="comparison-labels" style="font-size: 0.85rem;">
                                         <span id="statVisionAvg">Average: 35.4</span>
                                         <span class="comparison-rank" id="statVisionRank">Top 15%</span>
                                     </div>
-                                    <div class="rank-change">
-                                        <span id="statVisionChange">+3.2</span>
+                                    <div class="rank-change" style="font-size: 0.85rem;">
+                                        <span id="statVisionChange" style="color: #22c55e;">+3.2</span>
                                         <span>Last 30 days</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <p class="stat-label">Preferred Roles</p>
-                        <p class="stat-subtext" id="preferredRoles">Mid · Jungle · Fill</p>
-                    </div>
-                    <div style="margin-top:10px">
-                        <p class="stat-label">Recent Highlights</p>
-                        <p class="stat-subtext" id="profileHighlights">15.4 KDA Syndra · 18 Assist Thresh · Pentakill with Samira</p>
+
+
                     </div>
                 </aside>
-                <div class="stat-grid">
-                    <div class="stat-box wins">
+                <div class="stat-grid enhanced-stats">
+                    <div class="stat-box performance-overview">
+                        <div class="stat-icon performance-icon"></div>
                         <div style="position: relative; z-index: 2;">
-                            <div class="stat-label">Season Wins</div>
-                            <div class="stat-value" id="statSeasonWinsValue">214</div>
-                            <div class="stat-subtext" id="statSeasonWinsSubtext">+12 in the last week</div>
+                            <div class="stat-label">Performance Score</div>
+                            <div class="stat-value" id="statPerformanceValue">8.4</div>
+                            <div class="stat-subtext" id="statPerformanceSubtext">
+                                <span style="color: #4ade80">64% WR</span> • 
+                                <span style="color: #60a5fa">214 Wins</span> • 
+                                <span style="color: #fbbf24">32% Perfect KDA</span>
+                            </div>
                         </div>
                         <div class="stat-comparison">
                             <div class="comparison-bar">
-                                <div class="comparison-fill" style="width: 78%"></div>
+                                <div class="comparison-fill performance-fill" style="width: 84%"></div>
                             </div>
                             <div class="comparison-labels">
-                                <span>Top 22%</span>
-                                <span class="comparison-rank">Gold II Average</span>
+                                <span>Top 16%</span>
+                                <span class="comparison-rank">Overall Ranking</span>
                             </div>
                             <div class="rank-change">
-                                <span>+3% from last week</span>
-                                <span style="color: var(--text-soft)">• Rank 4,231</span>
+                                <span>Excellent Season</span>
+                                <span style="color: var(--text-soft)">• 6 First Bloods</span>
                             </div>
                         </div>
                     </div>
-                    <div class="stat-box kda">
+
+                    <div class="stat-box combat-mastery">
+                        <div class="stat-icon combat-icon"></div>
                         <div style="position: relative; z-index: 2;">
-                            <div class="stat-label">Average KDA</div>
-                            <div class="stat-value" id="statAverageKDAValue">3.68</div>
-                            <div class="stat-subtext" id="statAverageKDASubtext">
+                            <div class="stat-label">Combat Mastery</div>
+                            <div class="stat-value" id="statCombatValue">3.68</div>
+                            <div class="stat-subtext" id="statCombatSubtext">
                                 <span style="color: #4ade80">6.2</span> / 
                                 <span style="color: #ef4444">1.7</span> / 
-                                <span style="color: #60a5fa">5.8</span>
+                                <span style="color: #60a5fa">5.8</span> • 
+                                <span style="color: #f59e0b">15 Multikills</span>
                             </div>
                         </div>
                         <div class="stat-comparison">
                             <div class="comparison-bar">
-                                <div class="comparison-fill" style="width: 86%"></div>
+                                <div class="comparison-fill combat-fill" style="width: 86%"></div>
                             </div>
                             <div class="comparison-labels">
                                 <span>Top 14%</span>
-                                <span class="comparison-rank">Mid Lane Average</span>
+                                <span class="comparison-rank">KDA Efficiency</span>
                             </div>
                             <div class="rank-change">
-                                <span>+5% from last month</span>
-                                <span style="color: var(--text-soft)">• Perfect KDA: 7</span>
+                                <span>Elite Fighter</span>
+                                <span style="color: var(--text-soft)">• 1 Pentakill</span>
                             </div>
                         </div>
                     </div>
-                    <div class="stat-box damage">
+
+                    <div class="stat-box economy-control">
+                        <div class="stat-icon economy-icon"></div>
                         <div style="position: relative; z-index: 2;">
-                            <div class="stat-label">Damage Share</div>
-                            <div class="stat-value" id="statDamageShareValue">29%</div>
-                            <div class="stat-subtext" id="statDamageShareSubtext">
-                                <span style="color: #4ade80">32.4K</span> damage per game
+                            <div class="stat-label">Economy Control</div>
+                            <div class="stat-value" id="statEconomyValue">7.8</div>
+                            <div class="stat-subtext" id="statEconomySubtext">
+                                <span style="color: #fbbf24">CS/min</span> • 
+                                <span style="color: #4ade80">13.5K Gold</span> • 
+                                <span style="color: #60a5fa">156 CS/game</span>
                             </div>
                         </div>
                         <div class="stat-comparison">
                             <div class="comparison-bar">
-                                <div class="comparison-fill" style="width: 92%"></div>
+                                <div class="comparison-fill economy-fill" style="width: 82%"></div>
                             </div>
                             <div class="comparison-labels">
-                                <span>Top 8%</span>
-                                <span class="comparison-rank">Role Average</span>
+                                <span>Top 18%</span>
+                                <span class="comparison-rank">Farming Efficiency</span>
                             </div>
                             <div class="rank-change">
-                                <span>+2% from average</span>
-                                <span style="color: var(--text-soft)">• MVP Rate: 32%</span>
+                                <span>Strong Farmer</span>
+                                <span style="color: var(--text-soft)">• 28min avg game</span>
                             </div>
                         </div>
                     </div>
-                    <div class="stat-box vision">
+
+                    <div class="stat-box impact-rating">
+                        <div class="stat-icon impact-icon"></div>
                         <div style="position: relative; z-index: 2;">
-                            <div class="stat-label">Vision Score</div>
-                            <div class="stat-value" id="statVisionScoreValue">32</div>
-                            <div class="stat-subtext" id="statVisionScoreSubtext">
-                                <span style="color: #60a5fa">2.1</span> control wards per game
+                            <div class="stat-label">Team Impact</div>
+                            <div class="stat-value" id="statImpactValue">29%</div>
+                            <div class="stat-subtext" id="statImpactSubtext">
+                                <span style="color: #ef4444">24.8K Damage</span> • 
+                                <span style="color: #60a5fa">32 Vision</span> • 
+                                <span style="color: #4ade80">72% KP</span>
                             </div>
                         </div>
                         <div class="stat-comparison">
                             <div class="comparison-bar">
-                                <div class="comparison-fill" style="width: 71%"></div>
+                                <div class="comparison-fill impact-fill" style="width: 88%"></div>
                             </div>
                             <div class="comparison-labels">
-                                <span>Top 29%</span>
-                                <span class="comparison-rank">Mid Lane Average</span>
+                                <span>Top 12%</span>
+                                <span class="comparison-rank">Team Contribution</span>
                             </div>
-                            <div class="rank-change negative">
-                                <span>-2% from last month</span>
-                                <span style="color: var(--text-soft)">• 89% ward uptime</span>
+                            <div class="rank-change">
+                                <span>High Impact</span>
+                                <span style="color: var(--text-soft)">• Damage Share</span>
                             </div>
                         </div>
                     </div>
@@ -1668,7 +2203,7 @@
                             <th>Summoner</th>
                             <th style="width:100px">LP</th>
                             <th style="width:100px">Win Rate</th>
-                            <th style="width:120px">Main Role</th>
+                            <th style="width:120px">Games</th>
                         </tr>
                     </thead>
                     <tbody id="leaderboardBody"></tbody>
@@ -1841,13 +2376,87 @@
             ARAM: "ARAM"
         };
 
-        const leaderboardFallback = [
-            { rank: 1, name: "T1 Faker", lp: 1540, wr: "64%", role: "Mid" },
-            { rank: 2, name: "Gen G Peyz", lp: 1498, wr: "61%", role: "ADC" },
-            { rank: 3, name: "DRX BeryL", lp: 1435, wr: "59%", role: "Support" },
-            { rank: 4, name: "DK Canyon", lp: 1386, wr: "57%", role: "Jungle" },
-            { rank: 5, name: "T1 Zeus", lp: 1354, wr: "60%", role: "Top" }
-        ];
+        const regionalLeaderboards = {
+            kr: [
+                { rank: 1, name: "T1 Faker", lp: 1540, wr: "64%", role: "Mid" },
+                { rank: 2, name: "Gen G Peyz", lp: 1498, wr: "61%", role: "ADC" },
+                { rank: 3, name: "DRX BeryL", lp: 1435, wr: "59%", role: "Support" },
+                { rank: 4, name: "DK Canyon", lp: 1386, wr: "57%", role: "Jungle" },
+                { rank: 5, name: "T1 Zeus", lp: 1354, wr: "60%", role: "Top" }
+            ],
+            na1: [
+                { rank: 1, name: "C9 Jojopyun", lp: 1492, wr: "63%", role: "Mid" },
+                { rank: 2, name: "TL CoreJJ", lp: 1467, wr: "61%", role: "Support" },
+                { rank: 3, name: "100T Closer", lp: 1441, wr: "59%", role: "Jungle" },
+                { rank: 4, name: "TSM Tactical", lp: 1418, wr: "58%", role: "ADC" },
+                { rank: 5, name: "FLY Impact", lp: 1395, wr: "57%", role: "Top" }
+            ],
+            euw1: [
+                { rank: 1, name: "G2 Caps", lp: 1523, wr: "65%", role: "Mid" },
+                { rank: 2, name: "FNC Humanoid", lp: 1489, wr: "62%", role: "Mid" },
+                { rank: 3, name: "MAD Kaiser", lp: 1456, wr: "60%", role: "Support" },
+                { rank: 4, name: "VIT Photon", lp: 1428, wr: "58%", role: "ADC" },
+                { rank: 5, name: "BDS Adam", lp: 1403, wr: "57%", role: "Top" }
+            ],
+            eun1: [
+                { rank: 1, name: "Mocha47", lp: 1467, wr: "62%", role: "Mid" },
+                { rank: 2, name: "EUNE Predator", lp: 1434, wr: "60%", role: "Jungle" },
+                { rank: 3, name: "Nordic Saber", lp: 1401, wr: "58%", role: "Top" },
+                { rank: 4, name: "Balkan Sniper", lp: 1378, wr: "57%", role: "ADC" },
+                { rank: 5, name: "Czech Guardian", lp: 1355, wr: "56%", role: "Support" }
+            ],
+            br1: [
+                { rank: 1, name: "LOUD brTT", lp: 1478, wr: "63%", role: "ADC" },
+                { rank: 2, name: "paiN Tinowns", lp: 1445, wr: "61%", role: "Mid" },
+                { rank: 3, name: "FURIA Robo", lp: 1412, wr: "59%", role: "Jungle" },
+                { rank: 4, name: "RED Guigo", lp: 1389, wr: "58%", role: "Top" },
+                { rank: 5, name: "KBM Jockster", lp: 1366, wr: "57%", role: "Support" }
+            ],
+            jp1: [
+                { rank: 1, name: "DFM Yutapon", lp: 1456, wr: "62%", role: "ADC" },
+                { rank: 2, name: "SG Evi", lp: 1423, wr: "60%", role: "Top" },
+                { rank: 3, name: "BC Steal", lp: 1390, wr: "58%", role: "Jungle" },
+                { rank: 4, name: "V3 Archer", lp: 1367, wr: "57%", role: "Mid" },
+                { rank: 5, name: "CGA Gango", lp: 1344, wr: "56%", role: "Support" }
+            ],
+            ru: [
+                { rank: 1, name: "Diamondprox", lp: 1489, wr: "63%", role: "Jungle" },
+                { rank: 2, name: "Alex Ich", lp: 1456, wr: "61%", role: "Mid" },
+                { rank: 3, name: "Edward", lp: 1423, wr: "59%", role: "Support" },
+                { rank: 4, name: "Darien", lp: 1390, wr: "58%", role: "Top" },
+                { rank: 5, name: "Genja", lp: 1367, wr: "57%", role: "ADC" }
+            ],
+            oc1: [
+                { rank: 1, name: "ORDER Tally", lp: 1434, wr: "61%", role: "Mid" },
+                { rank: 2, name: "GRV Topoon", lp: 1401, wr: "59%", role: "Top" },
+                { rank: 3, name: "LGC Babip", lp: 1378, wr: "58%", role: "Jungle" },
+                { rank: 4, name: "DW FBI", lp: 1355, wr: "57%", role: "ADC" },
+                { rank: 5, name: "PCE Huhi", lp: 1332, wr: "56%", role: "Support" }
+            ],
+            tr1: [
+                { rank: 1, name: "SUP Zeitnot", lp: 1445, wr: "62%", role: "Mid" },
+                { rank: 2, name: "GAL Closer", lp: 1412, wr: "60%", role: "Jungle" },
+                { rank: 3, name: "FB Armut", lp: 1389, wr: "58%", role: "Top" },
+                { rank: 4, name: "DP HolyPhoenix", lp: 1366, wr: "57%", role: "ADC" },
+                { rank: 5, name: "BJK Zeitnot", lp: 1343, wr: "56%", role: "Support" }
+            ],
+            la1: [
+                { rank: 1, name: "EST Josedeodo", lp: 1467, wr: "62%", role: "Jungle" },
+                { rank: 2, name: "R7 Seiya", lp: 1434, wr: "60%", role: "Mid" },
+                { rank: 3, name: "INF Bugi", lp: 1401, wr: "58%", role: "Top" },
+                { rank: 4, name: "AK Mystiques", lp: 1378, wr: "57%", role: "ADC" },
+                { rank: 5, name: "XTN Slow", lp: 1355, wr: "56%", role: "Support" }
+            ],
+            la2: [
+                { rank: 1, name: "KRU Keznit", lp: 1478, wr: "63%", role: "ADC" },
+                { rank: 2, name: "LEV kingg", lp: 1445, wr: "61%", role: "Mid" },
+                { rank: 3, name: "9z daveeys", lp: 1412, wr: "59%", role: "Jungle" },
+                { rank: 4, name: "FUR Havoks", lp: 1389, wr: "58%", role: "Top" },
+                { rank: 5, name: "ISG Slowness", lp: 1366, wr: "57%", role: "Support" }
+            ]
+        };
+
+        const leaderboardFallback = regionalLeaderboards.kr;
 
         const fallbackData = {
             profile: {
@@ -1866,6 +2475,7 @@
                     "Samira Pentakill last session"
                 ],
                 stats: {
+                    winRate: { value: "52%", subtext: "214 wins, 197 losses" },
                     seasonWins: { value: "214", subtext: "+12 in the last week" },
                     averageKDA: { value: "3.68", subtext: "Across 5 recent ranked games" },
                     damageShare: { value: "29%", subtext: "+8% vs role average" },
@@ -1981,39 +2591,39 @@
             },
             champions: [
                 {
-                    name: "Ahri",
-                    role: "Mid",
-                    winRate: "56.2%",
-                    kda: "6.1 / 3.2 / 7.8",
-                    games: 24
-                },
-                {
-                    name: "Lee Sin",
-                    role: "Jungle",
-                    winRate: "53.4%",
-                    kda: "4.8 / 4.6 / 8.9",
-                    games: 18
-                },
-                {
-                    name: "Samira",
+                    name: "Jinx",
                     role: "ADC",
-                    winRate: "58.6%",
-                    kda: "8.9 / 5.1 / 5.6",
-                    games: 16
+                    winRate: "72.4%",
+                    kda: "9.2 / 2.8 / 6.4",
+                    games: 29,
+                    avgCs: "174",
+                    avgDamage: "28.5K"
                 },
                 {
-                    name: "Thresh",
-                    role: "Support",
-                    winRate: "54.7%",
-                    kda: "2.2 / 4.1 / 14.8",
-                    games: 29
+                    name: "Graves",
+                    role: "Jungle", 
+                    winRate: "68.8%",
+                    kda: "7.1 / 3.2 / 5.9",
+                    games: 25,
+                    avgCs: "156",
+                    avgDamage: "22.1K"
+                },
+                {
+                    name: "Azir",
+                    role: "Mid",
+                    winRate: "65.2%",
+                    kda: "8.4 / 2.9 / 7.6",
+                    games: 23,
+                    avgCs: "198",
+                    avgDamage: "25.8K"
                 }
             ],
-            leaderboard: leaderboardFallback,
+            leaderboard: null, // Will be loaded by fetchLeaderboardData
             meta: { source: "fallback" }
         };
 
         let state = clone(fallbackData);
+        state.selectedRegion = "kr"; // Initialize with default region
         let activeQueue = "RANKED_SOLO";
 
         function clone(obj) {
@@ -2046,6 +2656,10 @@
                 if (profile.bannerClip) {
                     banner.classList.add('has-video');
                     banner.innerHTML = `
+                        <video autoplay muted loop>
+                            <source src="${profile.bannerClip}" type="video/mp4">
+                            Your browser does not support video.
+                        </video>
                         <span class="play-pill">▶ Play Highlight</span>
                         <div class="banner-actions" onclick="event.stopPropagation()">
                             <button class="btn-mini" onclick="setBannerClip()">Set URL</button>
@@ -2071,41 +2685,130 @@
             
             console.log("Rendering profile with name:", profile.name, "full profile:", profile);
             const nameEl = document.getElementById("profileName");
-            const nameValue = profile.name ?? "Summoner";
-            nameEl.textContent = nameValue;
-            document.getElementById("profileMeta").textContent =
-                profile.metaLine ?? `${profile.regionDisplay ?? "NA"} · Level ${profile.level ?? "--"}`;
-            document.getElementById("rankLabel").textContent = profile.rankLabel ?? "Ranked Solo · Unranked";
-            document.getElementById("profileHeadline").textContent =
-                profile.headline ?? "Unranked · Grind placements to unlock rank data";
+            if (nameEl) {
+                const nameValue = profile.name ?? "Summoner";
+                nameEl.textContent = nameValue;
+            }
+            
+            const profileMetaEl = document.getElementById("profileMeta");
+            if (profileMetaEl) {
+                profileMetaEl.textContent = profile.metaLine ?? `${profile.regionDisplay ?? "NA"} · Level ${profile.level ?? "--"}`;
+            }
+            
+            const rankLabelEl = document.getElementById("rankLabel");
+            if (rankLabelEl) {
+                rankLabelEl.textContent = profile.rankLabel ?? "Ranked Solo · Unranked";
+            }
+            
+            const profileHeadlineEl = document.getElementById("profileHeadline");
+            if (profileHeadlineEl) {
+                profileHeadlineEl.textContent = profile.headline ?? "Unranked · Grind placements to unlock rank data";
+            }
 
             const rolesEl = document.getElementById("preferredRoles");
-            rolesEl.textContent = (profile.roles && profile.roles.length)
-                ? profile.roles.join(" · ")
-                : "Fill";
+            if (rolesEl) {
+                rolesEl.textContent = (profile.roles && profile.roles.length)
+                    ? profile.roles.join(" · ")
+                    : "Fill";
+            }
 
             const highlightsEl = document.getElementById("profileHighlights");
-            highlightsEl.textContent = (profile.highlights && profile.highlights.length)
-                ? profile.highlights.join(" · ")
-                : "Play more matches to unlock highlights";
+            if (highlightsEl) {
+                highlightsEl.textContent = (profile.highlights && profile.highlights.length)
+                    ? profile.highlights.join(" · ")
+                    : "Play more matches to unlock highlights";
+            }
 
             const stats = profile.stats || {};
-            document.getElementById("statSeasonWinsValue").textContent =
-                stats.seasonWins?.value ?? fallbackData.profile.stats.seasonWins.value;
-            document.getElementById("statSeasonWinsSubtext").textContent =
-                stats.seasonWins?.subtext ?? fallbackData.profile.stats.seasonWins.subtext;
-            document.getElementById("statAverageKDAValue").textContent =
-                stats.averageKDA?.value ?? fallbackData.profile.stats.averageKDA.value;
-            document.getElementById("statAverageKDASubtext").textContent =
-                stats.averageKDA?.subtext ?? fallbackData.profile.stats.averageKDA.subtext;
-            document.getElementById("statDamageShareValue").textContent =
-                stats.damageShare?.value ?? fallbackData.profile.stats.damageShare.value;
-            document.getElementById("statDamageShareSubtext").textContent =
-                stats.damageShare?.subtext ?? fallbackData.profile.stats.damageShare.subtext;
-            document.getElementById("statVisionScoreValue").textContent =
-                stats.visionScore?.value ?? fallbackData.profile.stats.visionScore.value;
-            document.getElementById("statVisionScoreSubtext").textContent =
-                stats.visionScore?.subtext ?? fallbackData.profile.stats.visionScore.subtext;
+            
+            const seasonWinsValueEl = document.getElementById("statSeasonWinsValue");
+            if (seasonWinsValueEl) {
+                seasonWinsValueEl.textContent = stats.seasonWins?.value ?? fallbackData.profile.stats.seasonWins.value;
+            }
+            
+            const seasonWinsSubtextEl = document.getElementById("statSeasonWinsSubtext");
+            if (seasonWinsSubtextEl) {
+                seasonWinsSubtextEl.textContent = stats.seasonWins?.subtext ?? fallbackData.profile.stats.seasonWins.subtext;
+            }
+            
+            const averageKDAValueEl = document.getElementById("statAverageKDAValue");
+            if (averageKDAValueEl) {
+                averageKDAValueEl.textContent = stats.averageKDA?.value ?? fallbackData.profile.stats.averageKDA.value;
+            }
+            
+            const averageKDASubtextEl = document.getElementById("statAverageKDASubtext");
+            if (averageKDASubtextEl) {
+                averageKDASubtextEl.textContent = stats.averageKDA?.subtext ?? fallbackData.profile.stats.averageKDA.subtext;
+            }
+            
+            const damageShareValueEl = document.getElementById("statDamageShareValue");
+            if (damageShareValueEl) {
+                damageShareValueEl.textContent = stats.damageShare?.value ?? fallbackData.profile.stats.damageShare.value;
+            }
+            
+            const damageShareSubtextEl = document.getElementById("statDamageShareSubtext");
+            if (damageShareSubtextEl) {
+                damageShareSubtextEl.textContent = stats.damageShare?.subtext ?? fallbackData.profile.stats.damageShare.subtext;
+            }
+            
+            const visionScoreValueEl = document.getElementById("statVisionScoreValue");
+            if (visionScoreValueEl) {
+                visionScoreValueEl.textContent = stats.visionScore?.value ?? fallbackData.profile.stats.visionScore.value;
+            }
+            
+            const visionScoreSubtextEl = document.getElementById("statVisionScoreSubtext");
+            if (visionScoreSubtextEl) {
+                visionScoreSubtextEl.textContent = stats.visionScore?.subtext ?? fallbackData.profile.stats.visionScore.subtext;
+            }
+
+            // Update enhanced 4-box stats
+            const performanceEl = document.getElementById("statPerformanceValue");
+            if (performanceEl) {
+                // Calculate performance score from win rate and KDA
+                const winRate = parseInt(stats.winRate?.value) || 50;
+                const kda = parseFloat(stats.averageKDA?.value) || 2.0;
+                const performanceScore = ((winRate / 100) * 5 + Math.min(kda / 2, 5)).toFixed(1);
+                performanceEl.textContent = performanceScore;
+            }
+            const performanceSubtextEl = document.getElementById("statPerformanceSubtext");
+            if (performanceSubtextEl) {
+                const winRate = stats.winRate?.value ?? "50%";
+                const wins = stats.seasonWins?.value ?? "0";
+                const perfectKDA = stats.perfectKDA?.value ?? "0%";
+                performanceSubtextEl.innerHTML = `<span style="color: #4ade80">${winRate} WR</span> • <span style="color: #60a5fa">${wins} Wins</span> • <span style="color: #fbbf24">${perfectKDA} Perfect KDA</span>`;
+            }
+
+            const combatEl = document.getElementById("statCombatValue");
+            if (combatEl) {
+                combatEl.textContent = stats.averageKDA?.value ?? "3.68";
+            }
+            const combatSubtextEl = document.getElementById("statCombatSubtext");
+            if (combatSubtextEl) {
+                const multikills = stats.multikills?.value ?? "15";
+                combatSubtextEl.innerHTML = `<span style="color: #4ade80">6.2</span> / <span style="color: #ef4444">1.7</span> / <span style="color: #60a5fa">5.8</span> • <span style="color: #f59e0b">${multikills} Multikills</span>`;
+            }
+
+            const economyEl = document.getElementById("statEconomyValue");
+            if (economyEl) {
+                economyEl.textContent = stats.csPerMinute?.value ?? "7.8";
+            }
+            const economySubtextEl = document.getElementById("statEconomySubtext");
+            if (economySubtextEl) {
+                const gold = stats.goldPerGame?.value ?? "13.5K";
+                const cs = stats.csPerMinute?.subtext?.split(' ')[0] ?? "156";
+                economySubtextEl.innerHTML = `<span style="color: #fbbf24">CS/min</span> • <span style="color: #4ade80">${gold} Gold</span> • <span style="color: #60a5fa">${cs} CS/game</span>`;
+            }
+
+            const impactEl = document.getElementById("statImpactValue");
+            if (impactEl) {
+                impactEl.textContent = stats.damageShare?.value ?? "29%";
+            }
+            const impactSubtextEl = document.getElementById("statImpactSubtext");
+            if (impactSubtextEl) {
+                const damage = stats.damagePerGame?.value ?? "24.8K";
+                const vision = stats.visionScore?.value ?? "32";
+                impactSubtextEl.innerHTML = `<span style="color: #ef4444">${damage} Damage</span> • <span style="color: #60a5fa">${vision} Vision</span> • <span style="color: #4ade80">72% KP</span>`;
+            }
             
             // Update spotlight stats (under logo)
             updateSpotlightStats(profile);
@@ -2115,7 +2818,7 @@
             const stats = profile.stats || {};
             
             // Win Rate from calculated stat
-            const winRateValue = stats.winRate?.value || "0%";
+            const winRateValue = stats.winRate?.value || "52%";
             
             // KDA Ratio from averageKDA
             const kdaValue = stats.averageKDA?.value || "3.42";
@@ -2199,6 +2902,7 @@
                 const iconUrl = buildChampionIconUrl(champ.name);
                 const gamesLabel = formatGamesLabel(champ.games || 0);
                 card.innerHTML = `
+                    <div class="champ-overlay"></div>
                     <div class="mastery-badge" title="${champ.games || 0} Games Played">
                         ${champ.games || 0}
                     </div>
@@ -2237,17 +2941,44 @@
         }
 
         function renderLeaderboard() {
+            console.log("renderLeaderboard called with region:", state.selectedRegion);
             const tbody = document.getElementById("leaderboardBody");
+            if (!tbody) {
+                console.error("leaderboardBody element not found");
+                return;
+            }
             tbody.innerHTML = "";
-            const leaderboard = state.leaderboard || leaderboardFallback;
+            const leaderboard = state.leaderboard;
+            
+            if (!leaderboard) {
+                // Show loading message if no leaderboard data yet
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Loading live leaderboard data...</td></tr>';
+                return;
+            }
+            
+            console.log("Using leaderboard data:", leaderboard);
             const regionSelect = document.getElementById("leaderboardRegionSelect");
             
             // Ensure region select matches state
-            if (regionSelect.value !== state.selectedRegion) {
+            if (regionSelect && regionSelect.value !== state.selectedRegion) {
                 regionSelect.value = state.selectedRegion;
             }
 
-            leaderboard.forEach(entry => {
+            // Update section header to show current region
+            const sectionHeader = document.querySelector("#leaderboard .section-header span");
+            const regionNames = {
+                kr: "KR", na1: "NA", euw1: "EUW", eun1: "EUNE", 
+                br1: "BR", jp1: "JP", ru: "RU", oc1: "OCE", 
+                tr1: "TR", la1: "LAN", la2: "LAS"
+            };
+            const regionName = regionNames[state.selectedRegion] || "KR";
+            sectionHeader.textContent = `${regionName} · Top 5 Summoners`;
+
+            leaderboard.forEach((entry, index) => {
+                if (index === 0) {
+                    console.log("Rendering first entry:", entry);
+                    console.log("LP value:", entry.lp, "Type:", typeof entry.lp);
+                }
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>#${entry.rank}</td>
@@ -2296,9 +3027,8 @@
                 ? payload.champions
                 : (isLive ? [] : clone(fallbackData.champions));
 
-            state.leaderboard = Array.isArray(payload?.leaderboard) && payload.leaderboard.length
-                ? payload.leaderboard
-                : clone(leaderboardFallback);
+            // Don't set leaderboard from summoner data - it's handled separately by fetchLeaderboardData
+            // state.leaderboard is managed independently
             renderAll();
         }
 
@@ -2312,16 +3042,25 @@
         }
 
         async function handleSearch() {
-            const input = document.getElementById("summonerSearch");
+            const nameInput = document.getElementById("summonerName");
+            const taglineInput = document.getElementById("summonerTagline");
             const regionSelect = document.getElementById("regionSelect");
-            const searchValue = (input.value || "").trim();
+            
+            const summonerName = (nameInput.value || "").trim();
+            const tagline = (taglineInput.value || "").trim();
+            const region = regionSelect.value;
 
-            if (!searchValue) {
+            if (!summonerName) {
                 alert("Please enter a summoner name to search.");
                 return;
             }
 
-            const region = regionSelect.value;
+            // Auto-fill tagline with region if not provided
+            const finalTagline = tagline || region.toUpperCase();
+            
+            // Construct the full name in the format "name#tagline"
+            const fullSummonerName = `${summonerName}#${finalTagline}`;
+
             const searchButton = document.querySelector(".search-wrapper .search-btn");
             const originalContent = searchButton.innerHTML;
 
@@ -2329,7 +3068,7 @@
             searchButton.innerHTML = "⏳";
 
             try {
-                const data = await fetchSummonerData(region, searchValue);
+                const data = await fetchSummonerData(region, fullSummonerName);
                 applySummonerData(data);
 
                 if (data?.meta?.reason && data.meta.source !== "riot") {
@@ -2384,7 +3123,14 @@
                 });
             });
 
-            document.getElementById("summonerSearch").addEventListener("keypress", event => {
+            // Add Enter key listeners to both name and tagline inputs
+            document.getElementById("summonerName").addEventListener("keypress", event => {
+                if (event.key === "Enter") {
+                    handleSearch();
+                }
+            });
+            
+            document.getElementById("summonerTagline").addEventListener("keypress", event => {
                 if (event.key === "Enter") {
                     handleSearch();
                 }
@@ -2395,23 +3141,53 @@
         });
 
         async function fetchLeaderboardData(region = "kr") {
+            console.log("fetchLeaderboardData called with region:", region);
             try {
+                // Always fetch live data first
                 const response = await fetch(`/api/leaderboard?region=${encodeURIComponent(region)}`);
-                if (!response.ok) throw new Error("Failed to fetch leaderboard data");
-                const data = await response.json();
-                state.leaderboard = data.leaderboard || clone(leaderboardFallback);
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log("Live leaderboard data received:", data);
+                    if (data.leaderboard && data.leaderboard.length > 0) {
+                        console.log("First leaderboard entry:", data.leaderboard[0]);
+                        state.leaderboard = data.leaderboard;
+                        state.selectedRegion = region;
+                        renderLeaderboard();
+                        return;
+                    }
+                }
+                
+                // If live data failed, show error message instead of mock data
+                console.warn("Live leaderboard data unavailable for region:", region);
+                state.leaderboard = [{
+                    rank: 1,
+                    name: "Live data unavailable",
+                    lp: "---",
+                    wr: "---",
+                    role: "Please try again later"
+                }];
                 state.selectedRegion = region;
                 renderLeaderboard();
+                
             } catch (error) {
                 console.error("Error fetching leaderboard:", error);
-                state.leaderboard = clone(leaderboardFallback);
+                state.leaderboard = [{
+                    rank: 1,
+                    name: "Connection error",
+                    lp: "---",
+                    wr: "---",
+                    role: "Please check your connection"
+                }];
+                state.selectedRegion = region;
                 renderLeaderboard();
             }
         }
 
-        function updateLeaderboardRegion(region) {
+        // Make function globally accessible
+        window.updateLeaderboardRegion = function(region) {
+            console.log("updateLeaderboardRegion called with region:", region);
             fetchLeaderboardData(region);
-        }
+        };
 
         async function prefetchDefaultSummoner() {
             try {
@@ -2533,6 +3309,8 @@
             const html = document.documentElement;
             html.style.scrollBehavior = 'smooth';
             html.style.scrollPaddingTop = '0px';
+
+            // Initialize leaderboard will be done by fetchLeaderboardData("kr")
 
             // Handle all navigation links
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {

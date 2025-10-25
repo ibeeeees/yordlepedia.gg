@@ -47,6 +47,7 @@ const summonerCache = createTimedCache(minutes(15));
 const rankedCache = createTimedCache(minutes(10));
 const matchIdsCache = createTimedCache(minutes(10));
 const matchDetailCache = createTimedCache(minutes(60));
+const challengerCache = createTimedCache(minutes(30)); // Cache challenger data for 30 minutes
 
 const regionToCluster = {
     br1: "americas",
@@ -424,7 +425,7 @@ app.get("/api/ranked", async (req, res) => {
     }
 });
 
-// Leaderboard endpoint (returns demo data)
+// Leaderboard endpoint with Riot API challenger league integration
 app.get("/api/leaderboard", async (req, res) => {
     try {
         const { region } = req.query;
@@ -434,23 +435,29 @@ app.get("/api/leaderboard", async (req, res) => {
             return res.status(400).json({ error: `Unsupported region "${region}".` });
         }
 
-        // Return mock leaderboard data for now
-        const leaderboard = [
-            { rank: 1, name: "T1 Faker", lp: 1540, wr: "64%", role: "Mid" },
-            { rank: 2, name: "Gen G Peyz", lp: 1498, wr: "61%", role: "ADC" },
-            { rank: 3, name: "DRX BeryL", lp: 1435, wr: "59%", role: "Support" },
-            { rank: 4, name: "DK Canyon", lp: 1386, wr: "57%", role: "Jungle" },
-            { rank: 5, name: "T1 Zeus", lp: 1354, wr: "60%", role: "Top" }
-        ];
+        if (!RIOT_API_KEY) {
+            return res.status(503).json({ 
+                error: "Riot API key not configured", 
+                region: normalizedRegion 
+            });
+        }
 
+        // Always fetch live challenger leaderboard data
+        const leaderboard = await fetchChallengerLeaderboard(normalizedRegion);
+        
         res.json({
-            meta: { source: "fallback", reason: "Leaderboard data coming soon with Riot API v5 integration" },
-            leaderboard,
+            meta: { source: "riot", retrievedAt: new Date().toISOString() },
+            leaderboard: leaderboard.slice(0, 10), // Top 10 players
             region: normalizedRegion
         });
     } catch (error) {
-        console.error("Leaderboard error:", error);
-        res.status(500).json({ error: "Failed to fetch leaderboard data." });
+        console.error(`Leaderboard error for ${region}:`, error.message);
+        // Return error instead of fallback to mock data
+        res.status(503).json({
+            error: "Unable to fetch live leaderboard data",
+            region: normalizedRegion,
+            details: error.message
+        });
     }
 });
 
@@ -556,20 +563,41 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "website.html"));
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// AWS Lambda handler export
+const serverless = require('serverless-http');
+
+// Lambda handler
+exports.handler = serverless(app, {
+    binary: ['image/*', 'video/*', 'audio/*']
+});
+
+// Start server (only if not in Lambda environment)
+if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+        if (!RIOT_API_KEY) {
+            console.warn("⚠️  RIOT_API_KEY not configured. Server will return demo data only.");
+        } else {
+            const keyPreview = `${RIOT_API_KEY.substring(0, 10)}...${RIOT_API_KEY.substring(RIOT_API_KEY.length - 5)}`;
+            console.log(`✓ RIOT_API_KEY configured: ${keyPreview}`);
+            // Prefetch configured summoners and challenger leaderboards
+            Promise.all([
+                prefetchConfiguredSummoners(),
+                prefetchChallengerLeaderboards()
+            ]).catch(err => {
+                console.error("Error during prefetch:", err?.message || err);
+            });
+        }
+    });
+} else {
+    console.log("Running in AWS Lambda environment");
     if (!RIOT_API_KEY) {
-        console.warn("⚠️  RIOT_API_KEY not configured. Server will return demo data only.");
+        console.warn("⚠️  RIOT_API_KEY not configured. Lambda will return demo data only.");
     } else {
         const keyPreview = `${RIOT_API_KEY.substring(0, 10)}...${RIOT_API_KEY.substring(RIOT_API_KEY.length - 5)}`;
         console.log(`✓ RIOT_API_KEY configured: ${keyPreview}`);
-        // Prefetch configured summoners
-        prefetchConfiguredSummoners().catch(err => {
-            console.error("Error during prefetch:", err?.message || err);
-        });
     }
-});
+}
 
 async function fetchSummonerProfile(region, summonerName) {
   const normalizedName = normalizeSummonerName(summonerName);
@@ -747,37 +775,130 @@ function isLikelyUrl(url) {
   }
 }
 
-async function prefetchConfiguredSummoners() {
+async function fetchChallengerLeaderboard(region) {
+  const cacheKey = `challenger:${region}`;
+  const cached = challengerCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    console.log(`[Challenger] Fetching challenger leaderboard for ${region.toUpperCase()}`);
+    
+    // Fetch challenger league for Ranked Solo (queue 420)
+    const challengerUrl = `https://${region}.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5`;
+    const response = await axios.get(challengerUrl, riotConfig());
+    
+    const challengerData = response.data;
+    const entries = challengerData.entries || [];
+    
+    // Sort by leaguePoints descending and take top 10
+    const sortedEntries = entries.sort((a, b) => b.leaguePoints - a.leaguePoints).slice(0, 10);
+    
+    // Process challenger entries
+    console.log(`[Challenger] Processing ${sortedEntries.length} challenger entries for ${region.toUpperCase()}`);
+    
+    const leaderboard = [];
+    for (let i = 0; i < sortedEntries.length; i++) {
+      const entry = sortedEntries[i];
+      let playerName = entry.summonerName;
+      
+      // Challenger API uses PUUID, need to fetch account info for gameName#tagLine
+      if (!playerName && entry.puuid) {
+        try {
+          // Use the cluster for this region to get the account info
+          const cluster = regionToCluster[region];
+          const accountUrl = `https://${cluster}.api.riotgames.com/riot/account/v1/accounts/by-puuid/${entry.puuid}`;
+          const accountResponse = await axios.get(accountUrl, riotConfig());
+          const account = accountResponse.data;
+          playerName = account.gameName && account.tagLine ? `${account.gameName}#${account.tagLine}` : account.gameName;
+          console.log(`[Challenger] Fetched account for PUUID ${entry.puuid.substring(0, 8)}...: ${playerName}`);
+        } catch (nameError) {
+          console.warn(`[Challenger] Failed to fetch account for PUUID ${entry.puuid?.substring(0, 8)}...:`, nameError.message);
+          playerName = `Player${i + 1}`;
+        }
+      }
+      
+      // If still no name, try summonerId as fallback
+      if (!playerName && entry.summonerId) {
+        try {
+          const summonerUrl = `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/${entry.summonerId}`;
+          const summonerResponse = await axios.get(summonerUrl, riotConfig());
+          playerName = summonerResponse.data.name;
+          console.log(`[Challenger] Fetched name for ${entry.summonerId}: ${playerName}`);
+        } catch (nameError) {
+          console.warn(`[Challenger] Failed to fetch name for ${entry.summonerId}:`, nameError.message);
+          playerName = `Player${i + 1}`;
+        }
+      }
+      
+      if (!playerName) {
+        playerName = `Player${i + 1}`;
+      }
+      
+      leaderboard.push({
+        rank: i + 1,
+        name: playerName,
+        lp: entry.leaguePoints || 0,
+        wr: entry.wins && entry.losses ? `${Math.round((entry.wins / (entry.wins + entry.losses)) * 100)}%` : "0%",
+        role: entry.wins && entry.losses ? `${entry.wins}W ${entry.losses}L` : "No data"
+      });
+    }
+
+    console.log(`[Challenger] Found ${leaderboard.length} challenger players for ${region.toUpperCase()}`);
+    if (leaderboard.length > 0) {
+      console.log(`[Challenger] Sample leaderboard entry for ${region}:`, JSON.stringify(leaderboard[0], null, 2));
+    }
+    challengerCache.set(cacheKey, leaderboard);
+    return leaderboard;
+  } catch (error) {
+    console.error(`[Challenger] Error fetching challenger data for ${region}:`, error.message);
+    throw error;
+  }
+}
+
+async function prefetchChallengerLeaderboards() {
   if (!RIOT_API_KEY) return;
-  const config = process.env.PREFETCH_SUMMONERS;
-  if (!config) return;
-
-  const entries = config.split(",").map(item => item.trim()).filter(Boolean);
-  for (const entry of entries) {
-    const [regionPart, ...nameParts] = entry.split(":");
-    if (!regionPart || !nameParts.length) continue;
-
-    const region = regionPart.toLowerCase();
-    const summonerName = nameParts.join(":").trim();
-    if (!regionToCluster[region] || !summonerName) continue;
-
+  
+  console.log("[Challenger] Prefetching challenger leaderboards for key regions...");
+  // Prioritize most popular regions to avoid timeouts
+  const priorityRegions = ['na1', 'euw1', 'kr', 'eun1', 'br1'];
+  
+  for (const region of priorityRegions) {
     try {
-      const payload = await hydrateSummoner(region, summonerName);
-      storeCachedResponse(region, summonerName, payload);
-      if (payload?.profile?.name) {
-        storeCachedResponse(region, payload.profile.name, payload);
-      }
-      console.log(`Prefetched ${payload?.profile?.name || summonerName} (${region.toUpperCase()})`);
+      await fetchChallengerLeaderboard(region);
+      console.log(`[Challenger] Prefetched leaderboard for ${region.toUpperCase()}`);
+      // Add delay to respect rate limits and avoid timeouts
+      await new Promise(resolve => setTimeout(resolve, 200));
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 404) {
-        console.warn(`Prefetch skipped: ${summonerName} (${region.toUpperCase()}) not found.`);
-        continue;
-      }
       if (axios.isAxiosError(error) && error.response?.status === 429) {
-        console.warn("Prefetch halted: Riot API rate limit reached.");
+        console.warn("[Challenger] Rate limit reached, stopping prefetch");
         break;
       }
-      console.warn(`Prefetch error for ${summonerName} (${region.toUpperCase()}):`, error?.message || error);
+      console.warn(`[Challenger] Failed to prefetch ${region.toUpperCase()}: ${error.message}`);
+    }
+  }
+}
+
+async function prefetchConfiguredSummoners() {
+  if (!RIOT_API_KEY) return;
+  
+  // Always prefetch ibes#na1 only
+  try {
+    console.log("[Prefetch] Fetching ibes#na1...");
+    const payload = await hydrateSummoner("na1", "ibes#na1");
+    storeCachedResponse("na1", "ibes#na1", payload);
+    if (payload?.profile?.name) {
+      storeCachedResponse("na1", payload.profile.name, payload);
+    }
+    console.log(`Prefetched ${payload?.profile?.name || "ibes#na1"} (NA1)`);
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      console.warn("Prefetch skipped: ibes#na1 not found.");
+    } else if (axios.isAxiosError(error) && error.response?.status === 429) {
+      console.warn("Prefetch halted: Riot API rate limit reached.");
+    } else {
+      console.warn(`Prefetch error for ibes#na1: ${error?.message || error}`);
     }
   }
 }
@@ -803,11 +924,25 @@ function enrichData(profile, rankedStats, rawMatches, region) {
     totalDeaths: 0,
     totalAssists: 0,
     totalVision: 0,
+    totalCS: 0,
+    totalGold: 0,
+    totalDamage: 0,
+    totalObjectiveDamage: 0,
+    totalTurretDamage: 0,
+    totalHeal: 0,
+    totalShielding: 0,
+    totalTimePlayed: 0,
     damageShares: [],
+    goldShares: [],
+    csPerMinutes: [],
     roles: new Map(),
     champions: new Map(),
     totalGames: 0,
-    totalWins: 0
+    totalWins: 0,
+    perfectKDAGames: 0,
+    multikills: { double: 0, triple: 0, quadra: 0, penta: 0 },
+    firstBloods: 0,
+    soloKills: 0
   };
 
   for (const match of rawMatches) {
@@ -831,16 +966,48 @@ function enrichData(profile, rankedStats, rawMatches, region) {
     const kpValue = Math.round(((kills + assists) / Math.max(1, teamKills)) * 100);
     const damageShare = participant.totalDamageDealtToChampions / teamDamage;
     const durationMinutes = Math.round((match.info.gameDuration || 0) / 60);
+    const durationSeconds = (match.info.gameDuration || 0);
     const queueLabel = queue.label;
     const gameTimestamp = match.info.gameEndTimestamp || match.info.gameCreation;
+
+    // Enhanced stats collection
+    const gold = participant.goldEarned || 0;
+    const totalDamage = participant.totalDamageDealtToChampions || 0;
+    const objectiveDamage = participant.damageDealtToObjectives || 0;
+    const turretDamage = participant.damageDealtToTurrets || 0;
+    const heal = participant.totalHeal || 0;
+    const shielding = participant.totalDamageShieldedOnTeammates || 0;
+    const csPerMin = durationSeconds > 0 ? (cs / (durationSeconds / 60)) : 0;
+    const goldShare = teamParticipants.length > 0 ? gold / teamParticipants.reduce((sum, p) => sum + (p.goldEarned || 0), 0) : 0;
 
     aggregation.totalKills += kills;
     aggregation.totalDeaths += deaths;
     aggregation.totalAssists += assists;
     aggregation.totalVision += participant.visionScore || 0;
+    aggregation.totalCS += cs;
+    aggregation.totalGold += gold;
+    aggregation.totalDamage += totalDamage;
+    aggregation.totalObjectiveDamage += objectiveDamage;
+    aggregation.totalTurretDamage += turretDamage;
+    aggregation.totalHeal += heal;
+    aggregation.totalShielding += shielding;
+    aggregation.totalTimePlayed += durationSeconds;
     aggregation.damageShares.push(damageShare);
+    aggregation.goldShares.push(goldShare);
+    aggregation.csPerMinutes.push(csPerMin);
     aggregation.totalGames += 1;
     aggregation.totalWins += participant.win ? 1 : 0;
+
+    // Track special achievements
+    if (deaths === 0 && (kills > 0 || assists > 0)) aggregation.perfectKDAGames += 1;
+    if (participant.firstBloodKill) aggregation.firstBloods += 1;
+    if (participant.doubleKills) aggregation.multikills.double += participant.doubleKills;
+    if (participant.tripleKills) aggregation.multikills.triple += participant.tripleKills;
+    if (participant.quadraKills) aggregation.multikills.quadra += participant.quadraKills;
+    if (participant.pentaKills) aggregation.multikills.penta += participant.pentaKills;
+    
+    // Solo kills approximation (kills where assists is 0 or very low relative to kills)
+    if (kills > assists && kills > 0) aggregation.soloKills += Math.max(0, kills - Math.floor(assists / 2));
 
     aggregation.roles.set(roleLabel, (aggregation.roles.get(roleLabel) || 0) + 1);
 
@@ -881,20 +1048,30 @@ function enrichData(profile, rankedStats, rawMatches, region) {
     .map(([role]) => role);
 
   const championSummaries = [...aggregation.champions.values()]
-    .sort((a, b) => b.games - a.games)
-    .slice(0, 4)
+    .filter(champ => champ.games >= 2) // Only show champions with at least 2 games for meaningful winrate
     .map(champ => {
       const avgKills = champ.kills / champ.games || 0;
       const avgDeaths = champ.deaths / champ.games || 0;
       const avgAssists = champ.assists / champ.games || 0;
+      const champWinRate = winRate(champ.wins, champ.games - champ.wins);
       return {
         name: champ.name,
         role: champ.role,
-        winRate: `${winRate(champ.wins, champ.games - champ.wins)}%`,
+        winRate: `${champWinRate}%`,
+        winRateValue: champWinRate, // For sorting
         kda: `${avgKills.toFixed(1)} / ${avgDeaths.toFixed(1)} / ${avgAssists.toFixed(1)}`,
         games: champ.games
       };
-    });
+    })
+    .sort((a, b) => {
+      // Sort by winrate first, then by games played as tiebreaker
+      if (b.winRateValue !== a.winRateValue) {
+        return b.winRateValue - a.winRateValue;
+      }
+      return b.games - a.games;
+    })
+    .slice(0, 4)
+    .map(({ winRateValue, ...champ }) => champ); // Remove winRateValue from final output
 
   const averageKda = aggregation.totalGames
     ? ((aggregation.totalKills + aggregation.totalAssists) / Math.max(1, aggregation.totalDeaths)).toFixed(2)
@@ -907,6 +1084,38 @@ function enrichData(profile, rankedStats, rawMatches, region) {
   const averageVision = aggregation.totalGames
     ? Math.round(aggregation.totalVision / aggregation.totalGames).toString()
     : "—";
+
+  // Calculate enhanced stats
+  const averageCS = aggregation.totalGames
+    ? Math.round(aggregation.totalCS / aggregation.totalGames)
+    : 0;
+
+  const averageCSPerMin = aggregation.csPerMinutes.length
+    ? (aggregation.csPerMinutes.reduce((sum, value) => sum + value, 0) / aggregation.csPerMinutes.length).toFixed(1)
+    : "0.0";
+
+  const averageGold = aggregation.totalGames
+    ? Math.round(aggregation.totalGold / aggregation.totalGames)
+    : 0;
+
+  const averageDamage = aggregation.totalGames
+    ? Math.round(aggregation.totalDamage / aggregation.totalGames)
+    : 0;
+
+  const perfectKDARate = aggregation.totalGames
+    ? Math.round((aggregation.perfectKDAGames / aggregation.totalGames) * 100)
+    : 0;
+
+  const firstBloodRate = aggregation.totalGames
+    ? Math.round((aggregation.firstBloods / aggregation.totalGames) * 100)
+    : 0;
+
+  const totalMultikills = aggregation.multikills.double + aggregation.multikills.triple + 
+                         aggregation.multikills.quadra + aggregation.multikills.penta;
+
+  const averageGameLength = aggregation.totalGames
+    ? Math.round((aggregation.totalTimePlayed / aggregation.totalGames) / 60)
+    : 0;
 
   const highlightedMatches = [
     ...matchesByQueue.RANKED_SOLO,
@@ -962,6 +1171,31 @@ function enrichData(profile, rankedStats, rawMatches, region) {
         visionScore: {
           value: averageVision,
           subtext: "Vision score per game"
+        },
+        // Enhanced stats
+        csPerMinute: {
+          value: averageCSPerMin,
+          subtext: `${averageCS} CS per game average`
+        },
+        goldPerGame: {
+          value: `${(averageGold / 1000).toFixed(1)}K`,
+          subtext: `${averageGameLength}min average game`
+        },
+        damagePerGame: {
+          value: `${(averageDamage / 1000).toFixed(1)}K`,
+          subtext: "Champion damage per game"
+        },
+        perfectKDA: {
+          value: `${perfectKDARate}%`,
+          subtext: `${aggregation.perfectKDAGames} perfect games`
+        },
+        firstBlood: {
+          value: `${firstBloodRate}%`,
+          subtext: `${aggregation.firstBloods} first bloods`
+        },
+        multikills: {
+          value: totalMultikills.toString(),
+          subtext: `${aggregation.multikills.penta} pentas, ${aggregation.multikills.quadra} quadras`
         }
       }
     },
